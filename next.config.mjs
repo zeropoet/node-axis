@@ -1,4 +1,4 @@
-const repo = process.env.GITHUB_REPOSITORY?.split("/")[1] ?? "axis";
+const repo = process.env.GITHUB_REPOSITORY?.split("/")[1] ?? "node-axis";
 const isGithubActions = process.env.GITHUB_ACTIONS === "true";
 
 /** @type {import('next').NextConfig} */
