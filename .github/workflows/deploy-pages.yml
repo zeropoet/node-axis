@@ -32,14 +32,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Cache node images
-        uses: actions/cache@v4
-        with:
-          path: public/node-images
-          key: node-images-${{ runner.os }}-${{ hashFiles('lib/appRegistry.ts', 'scripts/fetch-node-images.mjs') }}
-          restore-keys: |
-            node-images-${{ runner.os }}-
-
       - name: Build static export
         run: npm run build
 

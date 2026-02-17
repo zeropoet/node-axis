@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "dev:local": "NEXT_PUBLIC_APP_SOURCE_MODE=local next dev -p 3000",
-    "fetch:node-images": "node scripts/fetch-node-images.mjs",
-    "build": "npm run fetch:node-images && next build",
+    "build": "next build",
     "start": "next start"
   },
   "dependencies": {

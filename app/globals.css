@@ -3,10 +3,6 @@
   --bg-2: #132436;
   --bg-3: #1f3b4f;
   --ink: #e7f0f8;
-  --muted: #96afc1;
-  --panel: rgba(7, 17, 26, 0.86);
-  --panel-edge: rgba(183, 223, 255, 0.28);
-  --accent: #8ee09a;
 }
 
 * {
@@ -21,7 +17,7 @@ body {
   height: 100dvh;
   font-family: "Trebuchet MS", "Gill Sans", "Gill Sans MT", sans-serif;
   color: var(--ink);
-  background: rgb(220, 220, 220);
+  background: #fff;
   overflow: hidden;
 }
 
@@ -35,7 +31,7 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
-  background: rgb(220, 220, 220);
+  background: #fff;
   overflow: hidden;
 }
 
@@ -52,187 +48,92 @@ body {
   height: 100% !important;
 }
 
-.window {
-  position: absolute;
-  z-index: 1;
-  border-radius: 0;
-  border: 0;
-  background: #fff;
-  box-shadow: none;
-  padding: 0;
-  overflow: visible;
-}
-
-.window::before {
-  content: "";
-  position: absolute;
-  left: -5%;
-  top: -5%;
-  width: 110%;
-  height: 110%;
-  border: 1px solid #f00;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.window.is-selected {
-  outline: 2px solid rgba(255, 255, 255, 0.65);
-  outline-offset: -2px;
-  background: #fff !important;
-}
-
-.window.is-selected::before {
-  border-color: #000;
-}
-
-.content {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  z-index: 1;
-}
-
-.drag-zone {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 28px;
-  z-index: 2;
-  cursor: grab;
-}
-
-.content iframe {
-  display: none;
-}
-
-.face-id {
-  position: absolute;
-  top: 8px;
-  left: 0;
-  right: 0;
-  z-index: 3;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 4px 6px;
-  border-radius: 4px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  text-align: center;
-  white-space: nowrap;
-  color: #f00;
-  background: none;
-}
-
-.resize {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  z-index: 2;
-  width: 18px;
-  height: 18px;
-  border: 0;
-  background: linear-gradient(135deg, transparent 36%, rgba(255, 255, 255, 0.65) 36%, rgba(255, 255, 255, 0.65) 50%, transparent 50%);
-  cursor: nwse-resize;
-}
-
-.repo-panel {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(420px, 42vw, 42dvh);
-  max-width: calc(100vw - 1rem);
-  max-height: calc(100dvh - 1rem);
-  height: auto;
-  aspect-ratio: 1 / 1;
-  background: rgba(5, 10, 16, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0;
-  z-index: 30;
-  overflow: visible;
-  backdrop-filter: blur(4px);
-  font-family: inherit;
-  box-shadow: none;
-}
-
-@media (max-width: 768px) {
-  .repo-panel {
-    width: calc(100vw - 1rem);
-  }
-}
-
-.repo-panel::before {
-  content: "";
-  position: absolute;
-  left: -5%;
-  top: -5%;
-  width: 110%;
-  height: 110%;
-  border: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.repo-panel img {
-  display: block;
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: #0b0f14;
-  object-fit: cover;
-}
-
-.cluster-layout {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  padding: 12px;
-}
-
 .cluster-canvas {
   position: absolute;
   inset: 0;
   z-index: 2;
+}
+
+.node-square {
+  position: absolute;
+  border: 5px solid;
+  border-radius: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.node-square:hover {
+  transform: scale(1.05);
+}
+
+.node-square.is-selected {
+  box-shadow: none;
+}
+
+.node-square-label {
+  width: calc(100% - 8px);
+  padding: 2px 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+
+.display-overlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 90;
+  border: 5px solid #fff;
+  background: rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
 
-.cluster-node {
+.display-overlay-header {
   position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 28px;
+  padding: 0 10px;
+  z-index: 2;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-}
-
-.cluster-panel {
-  position: relative;
-  left: auto;
-  top: auto;
-  transform: none;
-  width: 260px;
-  height: 260px;
-  max-width: none;
-  max-height: none;
-  margin: 0;
-}
-
-.cluster-name {
-  margin: 0;
-  padding: 2px 8px;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #f00;
-  background: #fff;
+  color: #000;
+}
+
+.display-overlay-image-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.display-overlay-image-wrap img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #0b0f14;
 }
 
 nextjs-portal {
