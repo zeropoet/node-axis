@@ -279,7 +279,12 @@ export default function DesktopShell() {
               borderColor: selectedNode.clusterColor
             }}
           >
-            <header className="display-overlay-header">
+            <header
+              className="display-overlay-header"
+              style={{
+                background: selectedNode.clusterColor
+              }}
+            >
               <span>{selectedNode.clusterName}</span>
               <span>{selectedNode.name}</span>
             </header>

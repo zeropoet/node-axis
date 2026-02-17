@@ -432,12 +432,32 @@ const THE_STACKS_CLUSTER: CenterDisplayCluster = {
   ]
 }
 
+const THE_SOMETHING_CLUSTER: CenterDisplayCluster = {
+  id: "the-something",
+  name: "The Something",
+  nodes: [
+    {
+      id: "cognitive-singularity",
+      name: "Cognitive Singularity",
+      description: "The precise point where thought collapses into understanding.",
+      image: "ipfs://QmZz692JSnu9e3WvM3Vo4cPDmoeG9hd9UyyZMuQ9Y8cUuo/nft.png"
+    },
+    {
+      id: "nakamoto-satoshi",
+      name: "Nakamoto ][ Satoshi",
+      description: "",
+      image: "ipfs://QmeodBdcVh4Cr2z2tJFjLLQ1ysjiVKWnpUT5xVv8wdvT8V/nft.jpg"
+    }
+  ]
+}
+
 export const DEFAULT_CENTER_DISPLAY_CLUSTER_ID = PRIMARY_CENTER_CLUSTER.id
 
 export const CENTER_DISPLAY_CLUSTERS: CenterDisplayCluster[] = [
   PRIMARY_CENTER_CLUSTER,
   THE_ARCHIVE_CLUSTER,
-  THE_STACKS_CLUSTER
+  THE_STACKS_CLUSTER,
+  THE_SOMETHING_CLUSTER
 ]
 
 export function getCenterDisplayCluster(clusterId: string) {
