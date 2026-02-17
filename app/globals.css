@@ -186,6 +186,55 @@ body {
   object-fit: cover;
 }
 
+.cluster-layout {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 12px;
+}
+
+.cluster-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.cluster-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.cluster-panel {
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
+  width: 260px;
+  height: 260px;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+}
+
+.cluster-name {
+  margin: 0;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #f00;
+  background: #fff;
+}
+
 nextjs-portal {
   display: none !important;
 }
