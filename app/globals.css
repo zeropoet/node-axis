@@ -54,9 +54,16 @@ body {
   z-index: 2;
 }
 
+.cluster-links {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .node-square {
   position: absolute;
-  border: 5px solid;
+  border: 1px solid #000;
   border-radius: 0;
   padding: 0;
   display: flex;
@@ -65,8 +72,8 @@ body {
   cursor: pointer;
   overflow: hidden;
   z-index: 1;
-  transition: box-shadow 120ms ease, filter 140ms ease;
-  will-change: transform, box-shadow, filter;
+  transition: left 220ms ease, top 220ms ease, width 220ms ease, height 220ms ease, box-shadow 120ms ease, filter 140ms ease;
+  will-change: left, top, width, height, box-shadow, filter;
 }
 
 .node-square:hover {
@@ -90,51 +97,6 @@ body {
   text-overflow: ellipsis;
   color: #fff;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
-}
-
-.display-overlay {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 90;
-  border: 5px solid #fff;
-  background: rgba(0, 0, 0, 0.5);
-  overflow: visible;
-}
-
-.display-overlay-header {
-  position: absolute;
-  left: -5px;
-  right: -5px;
-  top: -33px;
-  height: 28px;
-  padding: 0 10px;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.12);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #000;
-}
-
-.display-overlay-image-wrap {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.display-overlay-image-wrap img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  background: #0b0f14;
 }
 
 nextjs-portal {

@@ -1,37 +1,75 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { CENTER_DISPLAY_CLUSTERS, resolveNodeImageUrl } from "@/lib/appRegistry"
+import { CENTER_DISPLAY_CLUSTERS } from "@/lib/appRegistry"
 import P5Background from "@/components/P5Background"
+
+type GridSortProperty = "clusterId" | "name" | "mass"
 
 type PositionedNode = {
   id: string
   name: string
   description: string
-  imageUrl: string
+  image: string
   clusterId: string
   clusterName: string
   clusterColor: string
-  phase: number
+  nodeMass: number
   x: number
   y: number
   size: number
+  col: number
+  row: number
+  index: number
 }
 
-type Rect = {
+type GridCell = {
   x: number
   y: number
-  width: number
-  height: number
+  size: number
+  col: number
+  row: number
+  index: number
 }
 
-const VIEWPORT_PADDING = 16
-const GRID_GAP = 2
-const NODE_MIN_SIZE = 42
-const NODE_MAX_SIZE = 72
-const NODE_ABSOLUTE_MIN_SIZE = 16
+type GridLayout = {
+  positions: GridCell[]
+  cols: number
+  rows: number
+  cellCount: number
+  activeCellIndices: number[]
+}
 
-const CLUSTER_COLORS = ["#ff2d55", "#00c2ff", "#00e08a", "#ff8a00", "#7a5cff", "#ffd400", "#ff4fd8"]
+type CornerPoints = {
+  tl: { x: number; y: number }
+  tr: { x: number; y: number }
+  br: { x: number; y: number }
+  bl: { x: number; y: number }
+}
+
+type LinkSegment = {
+  key: string
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  color: string
+  opacity: number
+  width: number
+}
+
+const VIEWPORT_PADDING = 0
+const GRID_GAP = 0
+const GRID_SORT_PROPERTY: GridSortProperty = "clusterId"
+const RANDOM_MASS_MIN = 0.32
+const RANDOM_MASS_MAX = 0.88
+// TODO: Replace random node mass with content-density-derived mass.
+const REFERENCE_VIEWPORT_AREA = 1280 * 720
+const GRID_OPEN_CELL_RATIO = 0.12
+const MOVEMENT_INTERVAL_MS = 220
+const MOVEMENT_BATCH_RATIO = 0.05
+
+const FALLBACK_CLUSTER_COLORS = ["#ff2d55", "#00c2ff", "#00e08a", "#ff8a00", "#7a5cff", "#ffd400", "#ff4fd8"]
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
@@ -46,152 +84,126 @@ function hashToUnit(value: string) {
   return ((hash >>> 0) % 10000) / 10000
 }
 
-function hexToRgba(hex: string, alpha: number) {
-  const normalized = hex.replace("#", "")
-  const expanded =
-    normalized.length === 3
-      ? normalized
-          .split("")
-          .map((ch) => `${ch}${ch}`)
-          .join("")
-      : normalized
-  const r = Number.parseInt(expanded.slice(0, 2), 16)
-  const g = Number.parseInt(expanded.slice(2, 4), 16)
-  const b = Number.parseInt(expanded.slice(4, 6), 16)
-  const safe = Number.isFinite(alpha) ? clamp(alpha, 0, 1) : 1
-  return `rgba(${r}, ${g}, ${b}, ${safe})`
-}
-
-function shuffleIndices(length: number, seed = 0) {
-  const items = Array.from({ length }, (_, i) => i)
-  let s = seed || 1
-  function rand() {
-    s ^= s << 13
-    s ^= s >> 17
-    s ^= s << 5
-    return ((s >>> 0) % 10000) / 10000
+function buildGridLayout(nodeCount: number, stageWidth: number, stageHeight: number): GridLayout {
+  if (nodeCount === 0) {
+    return { positions: [], cols: 1, rows: 1, cellCount: 0, activeCellIndices: [] }
   }
 
-  for (let i = items.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(rand() * (i + 1))
-    ;[items[i], items[j]] = [items[j], items[i]]
-  }
+  const usableWidth = Math.max(1, stageWidth - VIEWPORT_PADDING * 2) - GRID_GAP
+  const usableHeight = Math.max(1, stageHeight - VIEWPORT_PADDING * 2) - GRID_GAP
+  const viewportRatio = usableWidth / Math.max(1, usableHeight)
+  const targetCellCount = Math.max(nodeCount + 1, Math.ceil(nodeCount * (1 + GRID_OPEN_CELL_RATIO)))
+  const latticeCellCount = Math.max(targetCellCount, Math.ceil(targetCellCount * 1.35))
 
-  return items
-}
-
-function buildRandomGrid(
-  nodeCount: number,
-  stageWidth: number,
-  stageHeight: number,
-  seed: number,
-  blockedRect?: Rect
-): Array<{ x: number; y: number; size: number }> {
-  if (nodeCount === 0) return []
-
-  const usableWidth = Math.max(1, stageWidth - VIEWPORT_PADDING * 2)
-  const usableHeight = Math.max(1, stageHeight - VIEWPORT_PADDING * 2)
-  const areaPerNode = (usableWidth * usableHeight) / nodeCount
-  const targetSize = Math.floor(Math.sqrt(Math.max(1, areaPerNode)) - GRID_GAP)
-  let size = clamp(targetSize, NODE_MIN_SIZE, NODE_MAX_SIZE)
-
-  let cols = 1
+  let cols = latticeCellCount
   let rows = 1
-  let cell = size + GRID_GAP
-  let nonOverlappingCells: number[] = []
+  let bestScore = Number.POSITIVE_INFINITY
 
-  while (size >= NODE_ABSOLUTE_MIN_SIZE) {
-    cell = size + GRID_GAP
-    cols = Math.max(1, Math.floor((usableWidth + GRID_GAP) / cell))
-    rows = Math.max(1, Math.floor((usableHeight + GRID_GAP) / cell))
-    const totalCells = cols * rows
-    const allCells = Array.from({ length: totalCells }, (_, i) => i)
-    nonOverlappingCells = allCells.filter((cellIndex) => {
-      if (!blockedRect) return true
-      const col = cellIndex % cols
-      const row = Math.floor(cellIndex / cols)
-      const x = VIEWPORT_PADDING + col * cell
-      const y = VIEWPORT_PADDING + row * cell
-      const overlapsX = x < blockedRect.x + blockedRect.width && x + size > blockedRect.x
-      const overlapsY = y < blockedRect.y + blockedRect.height && y + size > blockedRect.y
-      return !(overlapsX && overlapsY)
-    })
+  for (let divisor = 1; divisor * divisor <= latticeCellCount; divisor += 1) {
+    if (latticeCellCount % divisor !== 0) continue
+    const pairACols = latticeCellCount / divisor
+    const pairARows = divisor
+    const pairBCols = divisor
+    const pairBRows = latticeCellCount / divisor
 
-    if (nonOverlappingCells.length >= nodeCount) {
-      break
+    const pairAScore = Math.abs(pairACols / pairARows - viewportRatio)
+    if (pairAScore < bestScore) {
+      bestScore = pairAScore
+      cols = pairACols
+      rows = pairARows
     }
 
-    size -= 1
+    const pairBScore = Math.abs(pairBCols / pairBRows - viewportRatio)
+    if (pairBScore < bestScore) {
+      bestScore = pairBScore
+      cols = pairBCols
+      rows = pairBRows
+    }
   }
 
-  if (nonOverlappingCells.length === 0) {
-    return []
+  if (cols * rows < latticeCellCount) {
+    rows = Math.max(1, Math.round(Math.sqrt(latticeCellCount / Math.max(0.1, viewportRatio))))
+    cols = Math.max(1, Math.ceil(latticeCellCount / rows))
   }
 
-  const shuffled = shuffleIndices(nonOverlappingCells.length, seed).map((index) => nonOverlappingCells[index])
+  const viewportScale = Math.sqrt((usableWidth * usableHeight) / Math.max(1, REFERENCE_VIEWPORT_AREA))
+  const responsiveScale = clamp(viewportScale, 0.78, 1.08)
+  const size = Math.max(1, Math.min(usableWidth / cols, usableHeight / rows) * responsiveScale)
+  const cell = size + GRID_GAP
+  const gridWidth = cols * cell - GRID_GAP
+  const gridHeight = rows * cell - GRID_GAP
+  const xOffset = VIEWPORT_PADDING + Math.floor((usableWidth - gridWidth) * 0.5)
+  const yOffset = VIEWPORT_PADDING + Math.floor((usableHeight - gridHeight) * 0.5)
+  const positions: GridCell[] = []
 
-  const positions: Array<{ x: number; y: number; size: number }> = []
-  for (let i = 0; i < nodeCount; i += 1) {
-    const cellIndex = shuffled[i % shuffled.length]
-    const col = cellIndex % cols
-    const row = Math.floor(cellIndex / cols)
+  const cellCount = cols * rows
 
-    const x = VIEWPORT_PADDING + col * cell
-    const y = VIEWPORT_PADDING + row * cell
-
-    positions.push({ x, y, size })
+  for (let i = 0; i < cellCount; i += 1) {
+    const col = i % cols
+    const row = Math.floor(i / cols)
+    const x = xOffset + col * cell
+    const y = yOffset + row * cell
+    positions.push({ x, y, size, col, row, index: i })
   }
 
-  return positions
+  const centerCol = (cols - 1) * 0.5
+  const centerRow = (rows - 1) * 0.5
+  const radiusCol = Math.max(1, cols * 0.5)
+  const radiusRow = Math.max(1, rows * 0.5)
+  const rankedByCenter = positions
+    .map((cellData) => {
+      const dx = (cellData.col - centerCol) / radiusCol
+      const dy = (cellData.row - centerRow) / radiusRow
+      const circularDistance = dx * dx + dy * dy
+      return { index: cellData.index, circularDistance }
+    })
+    .sort((a, b) => {
+      if (a.circularDistance !== b.circularDistance) return a.circularDistance - b.circularDistance
+      return a.index - b.index
+    })
+
+  const activeCellIndices = rankedByCenter.slice(0, Math.min(targetCellCount, cellCount)).map((item) => item.index)
+
+  return { positions, cols, rows, cellCount, activeCellIndices }
 }
 
-function getReservedDisplayRect(stageWidth: number, stageHeight: number): Rect {
-  const maxWidth = Math.min(460, Math.floor(stageWidth * 0.52))
-  const maxHeight = Math.min(460, Math.floor(stageHeight * 0.52))
-  const x = Math.round(stageWidth * 0.5 - maxWidth * 0.5)
-  const y = Math.round(stageHeight * 0.5 - maxHeight * 0.5)
+function getSortValue(node: Omit<PositionedNode, "x" | "y" | "size" | "col" | "row" | "index">, property: GridSortProperty) {
+  if (property === "name") return node.name.toLowerCase()
+  if (property === "mass") return node.nodeMass
+  return node.clusterId
+}
+
+function getNodeCorners(node: PositionedNode): CornerPoints {
   return {
-    x: x - GRID_GAP,
-    y: y - GRID_GAP,
-    width: maxWidth + GRID_GAP * 2,
-    height: maxHeight + GRID_GAP * 2
+    tl: { x: node.x, y: node.y },
+    tr: { x: node.x + node.size, y: node.y },
+    br: { x: node.x + node.size, y: node.y + node.size },
+    bl: { x: node.x, y: node.y + node.size }
   }
-}
-
-function intersectsRect(x: number, y: number, size: number, rect: Rect, margin = 0) {
-  const left = x - margin
-  const top = y - margin
-  const right = x + size + margin
-  const bottom = y + size + margin
-  return left < rect.x + rect.width && right > rect.x && top < rect.y + rect.height && bottom > rect.y
 }
 
 export default function DesktopShell() {
   const stageRef = useRef<HTMLDivElement>(null)
-  const randomSeedRef = useRef(Math.floor(Math.random() * 2147483647) + 1)
-  const pointerRef = useRef({ x: 0, y: 0, vx: 0, vy: 0, active: false })
-  const pointerTargetRef = useRef({ x: 0, y: 0, active: false })
-  const frameRef = useRef(0)
-
   const [stageSize, setStageSize] = useState({ width: 1280, height: 720 })
-  const [imageRatios, setImageRatios] = useState<Record<string, number>>({})
-  const [motionTick, setMotionTick] = useState(0)
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
 
   const flattenedNodes = useMemo(() => {
-    const nodes: Omit<PositionedNode, "x" | "y" | "size">[] = []
+    const nodes: Omit<PositionedNode, "x" | "y" | "size" | "col" | "row" | "index">[] = []
 
     CENTER_DISPLAY_CLUSTERS.forEach((cluster, clusterIndex) => {
-      const color = CLUSTER_COLORS[clusterIndex % CLUSTER_COLORS.length]
+      const color = cluster.color ?? FALLBACK_CLUSTER_COLORS[clusterIndex % FALLBACK_CLUSTER_COLORS.length]
+
       cluster.nodes.forEach((node) => {
+        const randomMass = RANDOM_MASS_MIN + hashToUnit(`${cluster.id}:${node.id}:mass`) * (RANDOM_MASS_MAX - RANDOM_MASS_MIN)
         nodes.push({
           id: `${cluster.id}:${node.id}`,
           name: node.name,
           description: node.description,
-          imageUrl: resolveNodeImageUrl(node.image),
+          image: node.image,
           clusterId: cluster.id,
           clusterName: cluster.name,
           clusterColor: color,
-          phase: hashToUnit(`${cluster.id}:${node.id}`) * Math.PI * 2
+          nodeMass: randomMass
         })
       })
     })
@@ -199,182 +211,227 @@ export default function DesktopShell() {
     return nodes
   }, [])
 
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(() => {
-    if (flattenedNodes.length === 0) return null
-    const randomIndex = Math.floor(Math.random() * flattenedNodes.length)
-    return flattenedNodes[randomIndex]?.id ?? null
-  })
-
-  useEffect(() => {
-    function syncSize() {
-      const el = stageRef.current
-      if (!el) return
-      const rect = el.getBoundingClientRect()
-      setStageSize({ width: Math.floor(rect.width), height: Math.floor(rect.height) })
-    }
-
-    syncSize()
-    window.addEventListener("resize", syncSize)
-    return () => window.removeEventListener("resize", syncSize)
-  }, [])
+  const arrangedNodes = useMemo(() => {
+    return [...flattenedNodes].sort((a, b) => {
+      const aValue = getSortValue(a, GRID_SORT_PROPERTY)
+      const bValue = getSortValue(b, GRID_SORT_PROPERTY)
+      if (aValue < bValue) return -1
+      if (aValue > bValue) return 1
+      if (a.name !== b.name) return a.name.localeCompare(b.name)
+      return a.id.localeCompare(b.id)
+    })
+  }, [flattenedNodes])
 
   useEffect(() => {
     const el = stageRef.current
     if (!el) return
 
-    function updateTarget(clientX: number, clientY: number, active: boolean) {
-      const rect = stageRef.current?.getBoundingClientRect()
-      if (!rect) return
-      pointerTargetRef.current.x = clientX - rect.left
-      pointerTargetRef.current.y = clientY - rect.top
-      pointerTargetRef.current.active = active
+    function syncSize() {
+      const rect = el!.getBoundingClientRect()
+      setStageSize({ width: Math.floor(rect.width), height: Math.floor(rect.height) })
     }
 
-    const onMouseMove = (event: MouseEvent) => updateTarget(event.clientX, event.clientY, true)
-    const onMouseEnter = (event: MouseEvent) => updateTarget(event.clientX, event.clientY, true)
-    const onMouseLeave = () => {
-      pointerTargetRef.current.active = false
-    }
-    const onTouchStart = (event: TouchEvent) => {
-      const touch = event.touches[0]
-      if (!touch) return
-      updateTarget(touch.clientX, touch.clientY, true)
-    }
-    const onTouchMove = (event: TouchEvent) => {
-      const touch = event.touches[0]
-      if (!touch) return
-      updateTarget(touch.clientX, touch.clientY, true)
-    }
-    const onTouchEnd = () => {
-      pointerTargetRef.current.active = false
-    }
-
-    el.addEventListener("mousemove", onMouseMove)
-    el.addEventListener("mouseenter", onMouseEnter)
-    el.addEventListener("mouseleave", onMouseLeave)
-    el.addEventListener("touchstart", onTouchStart, { passive: true })
-    el.addEventListener("touchmove", onTouchMove, { passive: true })
-    el.addEventListener("touchend", onTouchEnd)
+    syncSize()
+    const observer = new ResizeObserver(() => {
+      syncSize()
+    })
+    observer.observe(el)
+    window.addEventListener("resize", syncSize)
 
     return () => {
-      el.removeEventListener("mousemove", onMouseMove)
-      el.removeEventListener("mouseenter", onMouseEnter)
-      el.removeEventListener("mouseleave", onMouseLeave)
-      el.removeEventListener("touchstart", onTouchStart)
-      el.removeEventListener("touchmove", onTouchMove)
-      el.removeEventListener("touchend", onTouchEnd)
+      observer.disconnect()
+      window.removeEventListener("resize", syncSize)
     }
   }, [])
+
+  const gridLayout = useMemo(() => {
+    return buildGridLayout(arrangedNodes.length, stageSize.width, stageSize.height)
+  }, [arrangedNodes.length, stageSize.height, stageSize.width])
+
+  const [nodeCellIndices, setNodeCellIndices] = useState<number[]>([])
 
   useEffect(() => {
-    let rafId = 0
-    let mounted = true
+    setNodeCellIndices((prev) => {
+      if (arrangedNodes.length === 0 || gridLayout.cellCount === 0) return []
+      const activeCellSet = new Set<number>(gridLayout.activeCellIndices)
+      if (
+        prev.length === arrangedNodes.length &&
+        prev.every((idx) => idx >= 0 && idx < gridLayout.cellCount && activeCellSet.has(idx))
+      ) {
+        return prev
+      }
 
-    const animate = () => {
-      const target = pointerTargetRef.current
-      const current = pointerRef.current
-      const nextX = current.x + (target.x - current.x) * 0.16
-      const nextY = current.y + (target.y - current.y) * 0.16
-      current.vx = (nextX - current.x) * 0.92
-      current.vy = (nextY - current.y) * 0.92
-      current.x = nextX
-      current.y = nextY
-      current.active = target.active
+      return Array.from(
+        { length: arrangedNodes.length },
+        (_, index) => gridLayout.activeCellIndices[index % gridLayout.activeCellIndices.length] ?? 0
+      )
+    })
+  }, [arrangedNodes.length, gridLayout.activeCellIndices, gridLayout.cellCount])
 
-      frameRef.current += 1
-      if (mounted) setMotionTick((tick) => tick + 1)
-      rafId = requestAnimationFrame(animate)
-    }
+  useEffect(() => {
+    if (arrangedNodes.length === 0 || gridLayout.cellCount === 0) return
+    const activeCellSet = new Set<number>(gridLayout.activeCellIndices)
 
-    rafId = requestAnimationFrame(animate)
-    return () => {
-      mounted = false
-      cancelAnimationFrame(rafId)
-    }
-  }, [])
+    const timer = window.setInterval(() => {
+      setNodeCellIndices((prev) => {
+        if (prev.length !== arrangedNodes.length) return prev
 
-  const selectedNode = useMemo(() => {
-    if (!selectedNodeId) return null
-    return flattenedNodes.find((node) => node.id === selectedNodeId) ?? null
-  }, [flattenedNodes, selectedNodeId])
+        const next = prev.slice()
+        const occupied = new Map<number, number>()
+        next.forEach((cellIndex, nodeIndex) => {
+          occupied.set(cellIndex, nodeIndex)
+        })
 
-  const displayDimensions = useMemo(() => {
-    if (!selectedNode) {
-      return { width: 0, height: 0 }
-    }
+        const moveAttempts = Math.max(1, Math.floor(arrangedNodes.length * MOVEMENT_BATCH_RATIO))
+        for (let attempt = 0; attempt < moveAttempts; attempt += 1) {
+          const nodeIndex = Math.floor(Math.random() * arrangedNodes.length)
+          const currentCell = next[nodeIndex]
+          const col = currentCell % gridLayout.cols
+          const row = Math.floor(currentCell / gridLayout.cols)
 
-    const maxWidth = Math.min(460, Math.floor(stageSize.width * 0.52))
-    const maxHeight = Math.min(460, Math.floor(stageSize.height * 0.52))
-    const ratio = clamp(imageRatios[selectedNode.imageUrl] ?? 1, 0.05, 20)
-    const height = Math.max(120, Math.round(maxHeight))
-    const width = clamp(Math.round(height * ratio), 120, maxWidth)
+          const neighbors: number[] = []
+          if (col > 0) neighbors.push(currentCell - 1)
+          if (col < gridLayout.cols - 1) neighbors.push(currentCell + 1)
+          if (row > 0) neighbors.push(currentCell - gridLayout.cols)
+          if (row < gridLayout.rows - 1) neighbors.push(currentCell + gridLayout.cols)
 
-    return {
-      width,
-      height
-    }
-  }, [imageRatios, selectedNode, stageSize.height, stageSize.width])
+          const openNeighbors = neighbors.filter((neighborCell) => {
+            return (
+              neighborCell >= 0 &&
+              neighborCell < gridLayout.cellCount &&
+              activeCellSet.has(neighborCell) &&
+              !occupied.has(neighborCell)
+            )
+          })
 
-  const reservedDisplayRect = useMemo(
-    () => getReservedDisplayRect(stageSize.width, stageSize.height),
-    [stageSize.height, stageSize.width]
-  )
+          if (openNeighbors.length === 0) continue
+          const targetCell = openNeighbors[Math.floor(Math.random() * openNeighbors.length)]
+
+          occupied.delete(currentCell)
+          occupied.set(targetCell, nodeIndex)
+          next[nodeIndex] = targetCell
+        }
+
+        return next
+      })
+    }, MOVEMENT_INTERVAL_MS)
+
+    return () => window.clearInterval(timer)
+  }, [arrangedNodes.length, gridLayout.activeCellIndices, gridLayout.cellCount, gridLayout.cols, gridLayout.rows])
 
   const positionedNodes = useMemo(() => {
-    const layout = buildRandomGrid(
-      flattenedNodes.length,
-      stageSize.width,
-      stageSize.height,
-      randomSeedRef.current,
-      reservedDisplayRect
-    )
-
-    return flattenedNodes.map((node, index) => ({
-      ...node,
-      x: layout[index]?.x ?? VIEWPORT_PADDING,
-      y: layout[index]?.y ?? VIEWPORT_PADDING,
-      size: layout[index]?.size ?? NODE_MIN_SIZE
-    }))
-  }, [flattenedNodes, reservedDisplayRect, stageSize.height, stageSize.width])
-
-  const animatedNodes = useMemo(() => {
-    const pointer = pointerRef.current
-    const t = frameRef.current * 0.016
-    const influenceRadius = Math.min(stageSize.width, stageSize.height) * 0.34
-    const pointerVelocityGain = 10
-    const pointerPullGain = 16
-    const pointerTwistGain = 7
-
-    return positionedNodes.map((node) => {
-      const centerX = node.x + node.size * 0.5
-      const centerY = node.y + node.size * 0.5
-      const dx = centerX - pointer.x
-      const dy = centerY - pointer.y
-      const distance = Math.hypot(dx, dy) || 1
-      const rawInfluence = clamp(1 - distance / Math.max(1, influenceRadius), 0, 1)
-      const pointerInfluence = pointer.active ? rawInfluence * rawInfluence : 0
-      const pullX = (-dx / distance) * pointerInfluence * pointerPullGain
-      const pullY = (-dy / distance) * pointerInfluence * pointerPullGain
-      const sweepX = pointer.vx * pointerInfluence * pointerVelocityGain
-      const sweepY = pointer.vy * pointerInfluence * pointerVelocityGain
-
-      const waveX = Math.sin(t * 1.2 + node.phase) * 2.4
-      const waveY = Math.cos(t * 1.5 + node.phase * 0.78) * 2
-      const tx = waveX + pullX + sweepX
-      const ty = waveY + pullY + sweepY
-      const rot = Math.sin(t * 1.8 + node.phase) * 1.25 + pointerInfluence * pointerTwistGain
-      const scale = 1 + Math.sin(t * 2.1 + node.phase) * 0.02 + pointerInfluence * 0.1
-
+    return arrangedNodes.map((node, index) => {
+      const cellIndex = nodeCellIndices[index] ?? index
+      const layout = gridLayout.positions[cellIndex]
+      const baseSize = layout?.size ?? 1
+      const massScale = node.nodeMass
+      const scaledSize = baseSize * massScale
+      const scaledOffset = (scaledSize - baseSize) * 0.5
       return {
         ...node,
-        axisTx: tx,
-        axisTy: ty,
-        axisRot: rot,
-        axisScale: scale,
-        pointerInfluence
+        x: (layout?.x ?? VIEWPORT_PADDING) - scaledOffset,
+        y: (layout?.y ?? VIEWPORT_PADDING) - scaledOffset,
+        size: scaledSize,
+        col: layout?.col ?? 0,
+        row: layout?.row ?? 0,
+        index: cellIndex
       }
     })
-  }, [motionTick, positionedNodes, stageSize.height, stageSize.width])
+  }, [arrangedNodes, gridLayout.positions, nodeCellIndices])
+
+  const linkSegments = useMemo(() => {
+    const segments: LinkSegment[] = []
+    const cols = gridLayout.cols
+    const rows = gridLayout.rows
+    const cornerCache = new Map<string, CornerPoints>()
+    const nodesByCell = new Map<number, PositionedNode>()
+
+    positionedNodes.forEach((node) => {
+      nodesByCell.set(node.index, node)
+    })
+
+    function cornersFor(node: PositionedNode) {
+      const cached = cornerCache.get(node.id)
+      if (cached) return cached
+      const computed = getNodeCorners(node)
+      cornerCache.set(node.id, computed)
+      return computed
+    }
+
+    for (let cellIndex = 0; cellIndex < gridLayout.cellCount; cellIndex += 1) {
+      const node = nodesByCell.get(cellIndex)
+      if (!node) continue
+      const nodeCorners = cornersFor(node)
+      const col = cellIndex % cols
+      const row = Math.floor(cellIndex / cols)
+      const rightIndex = col < cols - 1 ? cellIndex + 1 : -1
+      const downIndex = row < rows - 1 ? cellIndex + cols : -1
+
+      if (rightIndex >= 0) {
+        const rightNode = nodesByCell.get(rightIndex)
+        if (rightNode) {
+          const rightCorners = cornersFor(rightNode)
+          const highlighted = node.id === selectedNodeId || rightNode.id === selectedNodeId
+          const opacity = highlighted ? 0.9 : 0.36
+          const width = highlighted ? 2.2 : 1.35
+
+          segments.push({
+            key: `${node.id}-rt`,
+            x1: nodeCorners.tr.x,
+            y1: nodeCorners.tr.y,
+            x2: rightCorners.tl.x,
+            y2: rightCorners.tl.y,
+            color: node.clusterColor,
+            opacity,
+            width
+          })
+          segments.push({
+            key: `${node.id}-rb`,
+            x1: nodeCorners.br.x,
+            y1: nodeCorners.br.y,
+            x2: rightCorners.bl.x,
+            y2: rightCorners.bl.y,
+            color: node.clusterColor,
+            opacity,
+            width
+          })
+        }
+      }
+
+      if (downIndex >= 0) {
+        const downNode = nodesByCell.get(downIndex)
+        if (downNode) {
+          const downCorners = cornersFor(downNode)
+          const highlighted = node.id === selectedNodeId || downNode.id === selectedNodeId
+          const opacity = highlighted ? 0.9 : 0.36
+          const width = highlighted ? 2.2 : 1.35
+
+          segments.push({
+            key: `${node.id}-dl`,
+            x1: nodeCorners.bl.x,
+            y1: nodeCorners.bl.y,
+            x2: downCorners.tl.x,
+            y2: downCorners.tl.y,
+            color: node.clusterColor,
+            opacity,
+            width
+          })
+          segments.push({
+            key: `${node.id}-dr`,
+            x1: nodeCorners.br.x,
+            y1: nodeCorners.br.y,
+            x2: downCorners.tr.x,
+            y2: downCorners.tr.y,
+            color: node.clusterColor,
+            opacity,
+            width
+          })
+        }
+      }
+    }
+
+    return segments
+  }, [gridLayout.cellCount, gridLayout.cols, gridLayout.rows, positionedNodes, selectedNodeId])
 
   return (
     <main className="desktop-shell">
@@ -382,11 +439,25 @@ export default function DesktopShell() {
         <P5Background />
 
         <div className="cluster-canvas">
-          {animatedNodes
-            .filter((node) => !intersectsRect(node.x, node.y, node.size, reservedDisplayRect, 4))
-            .map((node) => {
-            const isSelected = node.id === selectedNode?.id
-            const glowStrength = isSelected ? 1 : node.pointerInfluence
+          <svg className="cluster-links" width="100%" height="100%" aria-hidden="true">
+            {linkSegments.map((segment) => (
+              <line
+                key={segment.key}
+                x1={segment.x1}
+                y1={segment.y1}
+                x2={segment.x2}
+                y2={segment.y2}
+                stroke={segment.color}
+                strokeOpacity={clamp(segment.opacity, 0.12, 1)}
+                strokeWidth={segment.width}
+                strokeLinecap="square"
+              />
+            ))}
+          </svg>
+
+          {positionedNodes.map((node) => {
+            const isSelected = node.id === selectedNodeId
+            const glowStrength = isSelected ? 1 : 0.24
             return (
               <button
                 key={node.id}
@@ -400,61 +471,13 @@ export default function DesktopShell() {
                   width: `${node.size}px`,
                   height: `${node.size}px`,
                   borderColor: node.clusterColor,
-                  background: isSelected ? node.clusterColor : "#000",
-                  transform: `translate3d(${node.axisTx.toFixed(2)}px, ${node.axisTy.toFixed(2)}px, 0) rotate(${node.axisRot.toFixed(2)}deg) scale(${node.axisScale.toFixed(3)})`,
-                  boxShadow: `0 0 ${Math.round(4 + glowStrength * 18)}px ${hexToRgba(node.clusterColor, 0.16 + glowStrength * 0.42)}`
+                  background: isSelected ? "#000" : "transparent",
+                  boxShadow: `0 0 ${Math.round(4 + glowStrength * 18)}px rgba(0, 0, 0, 0.18)`
                 }}
-              >
-              </button>
+              />
             )
           })}
         </div>
-
-        {selectedNode ? (
-          <aside
-            className="display-overlay"
-            aria-label="Selected node display"
-            style={{
-              width: `${displayDimensions.width}px`,
-              height: `${displayDimensions.height}px`,
-              borderColor: selectedNode.clusterColor
-            }}
-          >
-            <header
-              className="display-overlay-header"
-              style={{
-                background: selectedNode.clusterColor
-              }}
-            >
-              <span>{selectedNode.clusterName}</span>
-              <span>{selectedNode.name}</span>
-            </header>
-            <div className="display-overlay-image-wrap">
-              <img
-                key={selectedNode.id}
-                alt={`${selectedNode.clusterName} ${selectedNode.name}`}
-                src={selectedNode.imageUrl}
-                loading="eager"
-                decoding="async"
-                draggable={false}
-                onLoad={(event) => {
-                  const { naturalWidth, naturalHeight, currentSrc } = event.currentTarget
-                  if (!naturalWidth || !naturalHeight) return
-                  const nextRatio = naturalWidth / naturalHeight
-                  setImageRatios((prev) =>
-                    prev[currentSrc] === nextRatio && prev[selectedNode.imageUrl] === nextRatio
-                      ? prev
-                      : {
-                          ...prev,
-                          [currentSrc]: nextRatio,
-                          [selectedNode.imageUrl]: nextRatio
-                        }
-                  )
-                }}
-              />
-            </div>
-          </aside>
-        ) : null}
       </section>
     </main>
   )

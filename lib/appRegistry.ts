@@ -1,13 +1,38 @@
+export type PhysicsConfig = {
+  mass: number
+  drag: number
+  spring: number
+  repulsion: number
+}
+
+export const DEFAULT_CLUSTER_PHYSICS: PhysicsConfig = {
+  mass: 1,
+  drag: 0.18,
+  spring: 1,
+  repulsion: 1
+}
+
+export const DEFAULT_NODE_PHYSICS: PhysicsConfig = {
+  mass: 1,
+  drag: 0.22,
+  spring: 1,
+  repulsion: 1
+}
+
 export type ClusterNode = {
   id: string
   name: string
   description: string
   image: string
+  mass?: number
+  physics?: Partial<PhysicsConfig>
 }
 
 export type CenterDisplayCluster = {
   id: string
   name: string
+  color?: string
+  physics?: Partial<PhysicsConfig>
   nodes: ClusterNode[]
   initialFaceCount?: number
 }
@@ -26,9 +51,31 @@ export function resolveNodeImageUrl(image: string) {
   return `${sanitizedGateway}${ipfsPath}`
 }
 
+function resolvePhysics(
+  physics: Partial<PhysicsConfig> | undefined,
+  defaults: PhysicsConfig
+): PhysicsConfig {
+  return {
+    mass: physics?.mass ?? defaults.mass,
+    drag: physics?.drag ?? defaults.drag,
+    spring: physics?.spring ?? defaults.spring,
+    repulsion: physics?.repulsion ?? defaults.repulsion
+  }
+}
+
+export function resolveClusterPhysics(physics?: Partial<PhysicsConfig>) {
+  return resolvePhysics(physics, DEFAULT_CLUSTER_PHYSICS)
+}
+
+export function resolveNodePhysics(physics?: Partial<PhysicsConfig>) {
+  return resolvePhysics(physics, DEFAULT_NODE_PHYSICS)
+}
+
 const PRIMARY_CENTER_CLUSTER: CenterDisplayCluster = {
   id: "the-library",
   name: "The Library",
+  color: "#ff2d55",
+  physics: { mass: 1.1, drag: 0.2, spring: 1.1, repulsion: 0.95 },
   nodes: [
     {
       id: "the-prototype",
@@ -60,6 +107,8 @@ const PRIMARY_CENTER_CLUSTER: CenterDisplayCluster = {
 const THE_ARCHIVE_CLUSTER: CenterDisplayCluster = {
   id: "the-archive",
   name: "The Archive",
+  color: "#00c2ff",
+  physics: { mass: 1, drag: 0.26, spring: 0.94, repulsion: 1.12 },
   initialFaceCount: 50,
   nodes: [
     {
@@ -368,6 +417,8 @@ const THE_ARCHIVE_CLUSTER: CenterDisplayCluster = {
 const THE_STACKS_CLUSTER: CenterDisplayCluster = {
   id: "the-stacks",
   name: "The Stacks",
+  color: "#00e08a",
+  physics: { mass: 0.96, drag: 0.18, spring: 1.2, repulsion: 0.9 },
   nodes: [
     {
       id: "191",
@@ -435,6 +486,8 @@ const THE_STACKS_CLUSTER: CenterDisplayCluster = {
 const THE_SOMETHING_CLUSTER: CenterDisplayCluster = {
   id: "the-something",
   name: "The Something",
+  color: "#ff8a00",
+  physics: { mass: 1.04, drag: 0.16, spring: 1.16, repulsion: 1 },
   nodes: [
     {
       id: "cognitive-singularity",

@@ -49,6 +49,12 @@ Edit `/lib/appRegistry.ts` to:
 
 - Add or remove clusters
 - Add or remove nodes within a cluster
-- Change node names, descriptions, and images
+- Change node names, descriptions, images, and optional `mass`
+
+## Mass Roadmap
+
+- `mass` is now a node-level layout property that controls square scale relative to other nodes.
+- Current fallback behavior uses deterministic random mass when a node does not define `mass`.
+- Planned next step: derive `mass` from per-node content density.
 
 The UI reads clusters from `CENTER_DISPLAY_CLUSTERS` and assigns palette colors by cluster order.
