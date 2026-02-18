@@ -446,8 +446,8 @@ export default function DesktopShell() {
                   width: `${node.size}px`,
                   height: `${node.size}px`,
                   borderColor: node.clusterColor,
-                  background: node.clusterId === "import-modules" ? "#fff" : "#000",
-                  boxShadow: `0 0 ${Math.round(4 + glowStrength * 18)}px rgba(0, 0, 0, 0.18)`
+                  background: "#000",
+                  boxShadow: "none"
                 }}
               />
             )

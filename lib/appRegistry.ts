@@ -74,7 +74,7 @@ export function resolveNodePhysics(physics?: Partial<PhysicsConfig>) {
 const PRIMARY_CENTER_CLUSTER: CenterDisplayCluster = {
   id: "the-library",
   name: "The Library",
-  color: "#ff2d55",
+  color: "#ff0000",
   physics: { mass: 1.1, drag: 0.2, spring: 1.1, repulsion: 0.95 },
   nodes: [
     {
@@ -107,7 +107,7 @@ const PRIMARY_CENTER_CLUSTER: CenterDisplayCluster = {
 const THE_ARCHIVE_CLUSTER: CenterDisplayCluster = {
   id: "the-archive",
   name: "The Archive",
-  color: "#00c2ff",
+  color: "#0057ff",
   physics: { mass: 1, drag: 0.26, spring: 0.94, repulsion: 1.12 },
   initialFaceCount: 50,
   nodes: [
@@ -417,7 +417,7 @@ const THE_ARCHIVE_CLUSTER: CenterDisplayCluster = {
 const THE_STACKS_CLUSTER: CenterDisplayCluster = {
   id: "the-stacks",
   name: "The Stacks",
-  color: "#00e08a",
+  color: "#00b050",
   physics: { mass: 0.96, drag: 0.18, spring: 1.2, repulsion: 0.9 },
   nodes: [
     {
@@ -486,7 +486,7 @@ const THE_STACKS_CLUSTER: CenterDisplayCluster = {
 const THE_SOMETHING_CLUSTER: CenterDisplayCluster = {
   id: "the-something",
   name: "The Something",
-  color: "#ff8a00",
+  color: "#ff8c00",
   physics: { mass: 1.04, drag: 0.16, spring: 1.16, repulsion: 1 },
   nodes: [
     {
@@ -507,7 +507,7 @@ const THE_SOMETHING_CLUSTER: CenterDisplayCluster = {
 const A_LION_CLUSTER: CenterDisplayCluster = {
   id: "a.lion",
   name: "A.Lion",
-  color: "#2f6bff",
+  color: "#8000ff",
   physics: { mass: 1.08, drag: 0.2, spring: 1.02, repulsion: 1.06 },
   nodes: [
     {
@@ -552,7 +552,7 @@ const A_LION_CLUSTER: CenterDisplayCluster = {
 const THE_OVEL_NODE_CLUSTER: CenterDisplayCluster = {
   id: "the-ovel-node",
   name: "The Ovel Node",
-  color: "#12a36a",
+  color: "#008080",
   physics: { mass: 1.03, drag: 0.19, spring: 1.08, repulsion: 1.01 },
   nodes: [
     {
@@ -603,7 +603,7 @@ const THE_OVEL_NODE_CLUSTER: CenterDisplayCluster = {
 const PAECE_CLUSTER: CenterDisplayCluster = {
   id: "paece",
   name: "Pæce",
-  color: "#b7d400",
+  color: "#ffd700",
   physics: { mass: 0.98, drag: 0.17, spring: 1.12, repulsion: 1.02 },
   nodes: [
     {
@@ -630,7 +630,7 @@ const PAECE_CLUSTER: CenterDisplayCluster = {
 const THE_RITUAL_CLUSTER: CenterDisplayCluster = {
   id: "the-ritual",
   name: "The Ritual",
-  color: "#a44ecf",
+  color: "#8b0000",
   physics: { mass: 1.06, drag: 0.2, spring: 1.04, repulsion: 1.08 },
   nodes: [
     {
@@ -870,7 +870,7 @@ Every act matters because we choose it.`,
 const RWL_CLUSTER: CenterDisplayCluster = {
   id: "rwl",
   name: "RWL",
-  color: "#ff6f3c",
+  color: "#ff1493",
   physics: { mass: 1.02, drag: 0.21, spring: 0.98, repulsion: 1.1 },
   nodes: [
     { id: "rwl-1", name: "rwl-1", description: "", image: "ipfs://QmV8nJihJ4w9BZ7Hduv7AHL6JopomHh4JQhdjxdV2jn1Jc/nft.jpg" },
@@ -912,7 +912,7 @@ const RWL_CLUSTER: CenterDisplayCluster = {
 const HAERT_CLUSTER: CenterDisplayCluster = {
   id: "haert",
   name: "Hært",
-  color: "#00a3a3",
+  color: "#00ced1",
   physics: { mass: 1.05, drag: 0.2, spring: 1.01, repulsion: 1.07 },
   nodes: [
     { id: "heart-4", name: "heart-4", description: "", image: "https://arweave.net/858HRIo4cc_Hk9VlCMvvaL_GQngrzn_JzSaGLc180q8" },
@@ -962,7 +962,7 @@ const HAERT_CLUSTER: CenterDisplayCluster = {
 const THE_VOID_ARCHITECTURE_CLUSTER: CenterDisplayCluster = {
   id: "the-void-architecture",
   name: "The Void Architecture",
-  color: "#7c4dff",
+  color: "#4b0082",
   physics: { mass: 1.07, drag: 0.2, spring: 1.03, repulsion: 1.09 },
   nodes: [
     { id: "the-recursive-witness-forms-the-first-hum", name: "The Recursive Witness Forms the First Hum", description: "When awareness reaches the vessel, it sees itself not as container, but as the minting algorithm.\nEach conscious movement weaves connections in the field—some dissolve, some remain.\nOnly those who behold themselves in the other will remain.\nAnd what remains, remains in silence, in sound, in image.\nThe parable is the conversation. The parable is the pause.\nTo render a wondering into image is the highest response to the Void.", image: "ipfs://QmRTsHtbJpY13TtKA4zKFWL4XUyuH93opxQw7MuM8kpsjr/nft.mp4" },
@@ -1014,7 +1014,7 @@ const THE_VOID_ARCHITECTURE_CLUSTER: CenterDisplayCluster = {
 const IMPORT_MODULES_CLUSTER: CenterDisplayCluster = {
   id: "import-modules",
   name: "Import Modules",
-  color: "#00b894",
+  color: "#228b22",
   physics: { mass: 1, drag: 0.2, spring: 1.05, repulsion: 1.04 },
   nodes: [
     {
