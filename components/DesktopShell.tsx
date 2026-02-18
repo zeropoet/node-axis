@@ -12,6 +12,7 @@ type PositionedNode = {
   clusterId: string
   clusterName: string
   clusterColor: string
+  phase: number
   x: number
   y: number
   size: number
@@ -30,12 +31,35 @@ const NODE_MIN_SIZE = 42
 const NODE_MAX_SIZE = 72
 const NODE_ABSOLUTE_MIN_SIZE = 16
 
-// Pulled from helios-lattice palette constants in sketch.js:
-// SCAFFOLD_RED, TRAIL_COOL_DAY, GUIDE_LAYER_DAY, GUIDE_WARM_DAY, BODY_COOL_DAY, TRAIL_WARM_DAY, GUIDE_COOL_DAY
-const CLUSTER_COLORS = ["#ff3838", "#7ed0ff", "#9cebc0", "#ffab81", "#9be2ff", "#ffc178", "#6fc2ff"]
+const CLUSTER_COLORS = ["#ff2d55", "#00c2ff", "#00e08a", "#ff8a00", "#7a5cff", "#ffd400", "#ff4fd8"]
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
+}
+
+function hashToUnit(value: string) {
+  let hash = 2166136261
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return ((hash >>> 0) % 10000) / 10000
+}
+
+function hexToRgba(hex: string, alpha: number) {
+  const normalized = hex.replace("#", "")
+  const expanded =
+    normalized.length === 3
+      ? normalized
+          .split("")
+          .map((ch) => `${ch}${ch}`)
+          .join("")
+      : normalized
+  const r = Number.parseInt(expanded.slice(0, 2), 16)
+  const g = Number.parseInt(expanded.slice(2, 4), 16)
+  const b = Number.parseInt(expanded.slice(4, 6), 16)
+  const safe = Number.isFinite(alpha) ? clamp(alpha, 0, 1) : 1
+  return `rgba(${r}, ${g}, ${b}, ${safe})`
 }
 
 function shuffleIndices(length: number, seed = 0) {
@@ -145,9 +169,13 @@ function intersectsRect(x: number, y: number, size: number, rect: Rect, margin =
 export default function DesktopShell() {
   const stageRef = useRef<HTMLDivElement>(null)
   const randomSeedRef = useRef(Math.floor(Math.random() * 2147483647) + 1)
+  const pointerRef = useRef({ x: 0, y: 0, vx: 0, vy: 0, active: false })
+  const pointerTargetRef = useRef({ x: 0, y: 0, active: false })
+  const frameRef = useRef(0)
 
   const [stageSize, setStageSize] = useState({ width: 1280, height: 720 })
   const [imageRatios, setImageRatios] = useState<Record<string, number>>({})
+  const [motionTick, setMotionTick] = useState(0)
 
   const flattenedNodes = useMemo(() => {
     const nodes: Omit<PositionedNode, "x" | "y" | "size">[] = []
@@ -162,7 +190,8 @@ export default function DesktopShell() {
           imageUrl: resolveNodeImageUrl(node.image),
           clusterId: cluster.id,
           clusterName: cluster.name,
-          clusterColor: color
+          clusterColor: color,
+          phase: hashToUnit(`${cluster.id}:${node.id}`) * Math.PI * 2
         })
       })
     })
@@ -189,6 +218,81 @@ export default function DesktopShell() {
     return () => window.removeEventListener("resize", syncSize)
   }, [])
 
+  useEffect(() => {
+    const el = stageRef.current
+    if (!el) return
+
+    function updateTarget(clientX: number, clientY: number, active: boolean) {
+      const rect = stageRef.current?.getBoundingClientRect()
+      if (!rect) return
+      pointerTargetRef.current.x = clientX - rect.left
+      pointerTargetRef.current.y = clientY - rect.top
+      pointerTargetRef.current.active = active
+    }
+
+    const onMouseMove = (event: MouseEvent) => updateTarget(event.clientX, event.clientY, true)
+    const onMouseEnter = (event: MouseEvent) => updateTarget(event.clientX, event.clientY, true)
+    const onMouseLeave = () => {
+      pointerTargetRef.current.active = false
+    }
+    const onTouchStart = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      if (!touch) return
+      updateTarget(touch.clientX, touch.clientY, true)
+    }
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      if (!touch) return
+      updateTarget(touch.clientX, touch.clientY, true)
+    }
+    const onTouchEnd = () => {
+      pointerTargetRef.current.active = false
+    }
+
+    el.addEventListener("mousemove", onMouseMove)
+    el.addEventListener("mouseenter", onMouseEnter)
+    el.addEventListener("mouseleave", onMouseLeave)
+    el.addEventListener("touchstart", onTouchStart, { passive: true })
+    el.addEventListener("touchmove", onTouchMove, { passive: true })
+    el.addEventListener("touchend", onTouchEnd)
+
+    return () => {
+      el.removeEventListener("mousemove", onMouseMove)
+      el.removeEventListener("mouseenter", onMouseEnter)
+      el.removeEventListener("mouseleave", onMouseLeave)
+      el.removeEventListener("touchstart", onTouchStart)
+      el.removeEventListener("touchmove", onTouchMove)
+      el.removeEventListener("touchend", onTouchEnd)
+    }
+  }, [])
+
+  useEffect(() => {
+    let rafId = 0
+    let mounted = true
+
+    const animate = () => {
+      const target = pointerTargetRef.current
+      const current = pointerRef.current
+      const nextX = current.x + (target.x - current.x) * 0.16
+      const nextY = current.y + (target.y - current.y) * 0.16
+      current.vx = (nextX - current.x) * 0.92
+      current.vy = (nextY - current.y) * 0.92
+      current.x = nextX
+      current.y = nextY
+      current.active = target.active
+
+      frameRef.current += 1
+      if (mounted) setMotionTick((tick) => tick + 1)
+      rafId = requestAnimationFrame(animate)
+    }
+
+    rafId = requestAnimationFrame(animate)
+    return () => {
+      mounted = false
+      cancelAnimationFrame(rafId)
+    }
+  }, [])
+
   const selectedNode = useMemo(() => {
     if (!selectedNodeId) return null
     return flattenedNodes.find((node) => node.id === selectedNodeId) ?? null
@@ -202,17 +306,12 @@ export default function DesktopShell() {
     const maxWidth = Math.min(460, Math.floor(stageSize.width * 0.52))
     const maxHeight = Math.min(460, Math.floor(stageSize.height * 0.52))
     const ratio = clamp(imageRatios[selectedNode.imageUrl] ?? 1, 0.05, 20)
-
-    let width = maxWidth
-    let height = width / ratio
-    if (height > maxHeight) {
-      height = maxHeight
-      width = height * ratio
-    }
+    const height = Math.max(120, Math.round(maxHeight))
+    const width = clamp(Math.round(height * ratio), 120, maxWidth)
 
     return {
-      width: Math.max(120, Math.round(width)),
-      height: Math.max(120, Math.round(height))
+      width,
+      height
     }
   }, [imageRatios, selectedNode, stageSize.height, stageSize.width])
 
@@ -238,16 +337,56 @@ export default function DesktopShell() {
     }))
   }, [flattenedNodes, reservedDisplayRect, stageSize.height, stageSize.width])
 
+  const animatedNodes = useMemo(() => {
+    const pointer = pointerRef.current
+    const t = frameRef.current * 0.016
+    const influenceRadius = Math.min(stageSize.width, stageSize.height) * 0.34
+    const pointerVelocityGain = 10
+    const pointerPullGain = 16
+    const pointerTwistGain = 7
+
+    return positionedNodes.map((node) => {
+      const centerX = node.x + node.size * 0.5
+      const centerY = node.y + node.size * 0.5
+      const dx = centerX - pointer.x
+      const dy = centerY - pointer.y
+      const distance = Math.hypot(dx, dy) || 1
+      const rawInfluence = clamp(1 - distance / Math.max(1, influenceRadius), 0, 1)
+      const pointerInfluence = pointer.active ? rawInfluence * rawInfluence : 0
+      const pullX = (-dx / distance) * pointerInfluence * pointerPullGain
+      const pullY = (-dy / distance) * pointerInfluence * pointerPullGain
+      const sweepX = pointer.vx * pointerInfluence * pointerVelocityGain
+      const sweepY = pointer.vy * pointerInfluence * pointerVelocityGain
+
+      const waveX = Math.sin(t * 1.2 + node.phase) * 2.4
+      const waveY = Math.cos(t * 1.5 + node.phase * 0.78) * 2
+      const tx = waveX + pullX + sweepX
+      const ty = waveY + pullY + sweepY
+      const rot = Math.sin(t * 1.8 + node.phase) * 1.25 + pointerInfluence * pointerTwistGain
+      const scale = 1 + Math.sin(t * 2.1 + node.phase) * 0.02 + pointerInfluence * 0.1
+
+      return {
+        ...node,
+        axisTx: tx,
+        axisTy: ty,
+        axisRot: rot,
+        axisScale: scale,
+        pointerInfluence
+      }
+    })
+  }, [motionTick, positionedNodes, stageSize.height, stageSize.width])
+
   return (
     <main className="desktop-shell">
       <section ref={stageRef} className="stage" aria-label="Cluster node stage">
         <P5Background />
 
         <div className="cluster-canvas">
-          {positionedNodes
+          {animatedNodes
             .filter((node) => !intersectsRect(node.x, node.y, node.size, reservedDisplayRect, 4))
             .map((node) => {
             const isSelected = node.id === selectedNode?.id
+            const glowStrength = isSelected ? 1 : node.pointerInfluence
             return (
               <button
                 key={node.id}
@@ -261,7 +400,9 @@ export default function DesktopShell() {
                   width: `${node.size}px`,
                   height: `${node.size}px`,
                   borderColor: node.clusterColor,
-                  background: isSelected ? node.clusterColor : "#000"
+                  background: isSelected ? "#fff" : node.clusterColor,
+                  transform: `translate3d(${node.axisTx.toFixed(2)}px, ${node.axisTy.toFixed(2)}px, 0) rotate(${node.axisRot.toFixed(2)}deg) scale(${node.axisScale.toFixed(3)})`,
+                  boxShadow: `0 0 ${Math.round(4 + glowStrength * 18)}px ${hexToRgba(node.clusterColor, 0.16 + glowStrength * 0.42)}`
                 }}
               >
               </button>
