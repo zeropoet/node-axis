@@ -26,7 +26,7 @@ type Rect = {
 }
 
 const VIEWPORT_PADDING = 16
-const GRID_GAP = 8
+const GRID_GAP = 2
 const NODE_MIN_SIZE = 42
 const NODE_MAX_SIZE = 72
 const NODE_ABSOLUTE_MIN_SIZE = 16
@@ -400,7 +400,7 @@ export default function DesktopShell() {
                   width: `${node.size}px`,
                   height: `${node.size}px`,
                   borderColor: node.clusterColor,
-                  background: isSelected ? "#fff" : node.clusterColor,
+                  background: isSelected ? node.clusterColor : "#000",
                   transform: `translate3d(${node.axisTx.toFixed(2)}px, ${node.axisTy.toFixed(2)}px, 0) rotate(${node.axisRot.toFixed(2)}deg) scale(${node.axisScale.toFixed(3)})`,
                   boxShadow: `0 0 ${Math.round(4 + glowStrength * 18)}px ${hexToRgba(node.clusterColor, 0.16 + glowStrength * 0.42)}`
                 }}
