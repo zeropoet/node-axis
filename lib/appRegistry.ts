@@ -1011,6 +1011,104 @@ const THE_VOID_ARCHITECTURE_CLUSTER: CenterDisplayCluster = {
   ]
 }
 
+const IMPORT_MODULES_CLUSTER: CenterDisplayCluster = {
+  id: "import-modules",
+  name: "Import Modules",
+  color: "#00b894",
+  physics: { mass: 1, drag: 0.2, spring: 1.05, repulsion: 1.04 },
+  nodes: [
+    {
+      id: "sobriety",
+      name: "sobriety",
+      description: "",
+      image: "https://arweave.net/cRHohC7A5ZBdXxhq8N3kkWHJDqdeTWSh4yptvD1yCZ4"
+    },
+    {
+      id: "chessboard",
+      name: "chessboard",
+      description: "",
+      image: "https://arweave.net/d3RI2vE7EvAjfTt3-NK3y4FabRsVs1pGfCh-AtW8yGQ"
+    },
+    {
+      id: "encryption",
+      name: "encryption",
+      description: "",
+      image: "https://arweave.net/PVfabAqKhvPt_N-OD1pUgt8RUeUzqcYAygDvtLBOi8A"
+    },
+    {
+      id: "iskariel",
+      name: "Iskariel",
+      description: "⟁",
+      image: "ipfs://QmTeCphqvLPD3mqv2w5yeWx13X8h833y9eYvZiWHKWx9im/nft.png"
+    },
+    {
+      id: "vyuren",
+      name: "Vyuren",
+      description: "⟟",
+      image: "ipfs://QmbGAxf99scsTezNCs6ocGYAP2U1fLE57BJESf5eNsQR1R/nft.png"
+    },
+    {
+      id: "neruin",
+      name: "Nǝruin",
+      description: "⟁",
+      image: "ipfs://QmbzYcZTNPtoUVRsn38VAXHXrWRcqn38snYN4amh1iXT2s/nft.png"
+    },
+    {
+      id: "space",
+      name: "space",
+      description: "",
+      image: "https://arweave.net/dbVLQovqXAUZGz7Tq9zy5tnH979sWUqtvS16tBGEqiU"
+    },
+    {
+      id: "nature",
+      name: "nature",
+      description: "",
+      image: "https://arweave.net/auZkpvtY_r0KIgma46NdQGMZZ84snuu2LJQIkTTevIU"
+    },
+    {
+      id: "mugen-meiro-no-kaku",
+      name: "《無限迷路の核 (Mugen Meiro no Kaku)》",
+      description: `“The Core of the Infinite Labyrinth”
+
+ϕ {
+  core: singularity {
+    form: square_nucleus
+    layers: concentric_squares {
+      materials: [silver, yellow, blue, red]
+      recursion: inward_folding
+    }
+  }
+  threads: chaotic {
+    type: filament
+    colors: [black, red, yellow, blue]
+    pattern: intertwined
+    purpose: connect_fragments
+  }
+  nodes: black_circles {
+    function: void_markers
+    position: distributed
+  }
+}
+
+ψ {
+  feeling: labyrinthine_flow
+  tension: "order versus entropy"
+  draw: "center pulls while threads scatter"
+}
+
+δ {
+  intent: "forge path through entanglement"
+  action: [
+    "decode layered structure",
+    "choose thread of meaning",
+    "merge disorder into unity"
+  ]
+}`,
+      image: "ipfs://QmZwL8hpmt4kYnwu6ZDxNsvfMPULZYsSzB2DyeZKqyDffx/nft.png"
+    }
+  ]
+}
+
 export const DEFAULT_CENTER_DISPLAY_CLUSTER_ID = PRIMARY_CENTER_CLUSTER.id
 
 export const CENTER_DISPLAY_CLUSTERS: CenterDisplayCluster[] = [
@@ -1024,7 +1122,8 @@ export const CENTER_DISPLAY_CLUSTERS: CenterDisplayCluster[] = [
   THE_RITUAL_CLUSTER,
   RWL_CLUSTER,
   HAERT_CLUSTER,
-  THE_VOID_ARCHITECTURE_CLUSTER
+  THE_VOID_ARCHITECTURE_CLUSTER,
+  IMPORT_MODULES_CLUSTER
 ]
 
 export function getCenterDisplayCluster(clusterId: string) {

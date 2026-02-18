@@ -61,8 +61,8 @@ type LinkSegment = {
 const VIEWPORT_PADDING = 0
 const GRID_GAP = 0
 const GRID_SORT_PROPERTY: GridSortProperty = "clusterId"
-const RANDOM_MASS_MIN = 0.32
-const RANDOM_MASS_MAX = 0.88
+const RANDOM_MASS_MIN = 0.42
+const RANDOM_MASS_MAX = 0.94
 // TODO: Replace random node mass with content-density-derived mass.
 const REFERENCE_VIEWPORT_AREA = 1280 * 720
 const GRID_OPEN_CELL_RATIO = 0.34
@@ -95,35 +95,10 @@ function buildGridLayout(nodeCount: number, stageWidth: number, stageHeight: num
   const targetCellCount = Math.max(nodeCount + 1, Math.ceil(nodeCount * (1 + GRID_OPEN_CELL_RATIO)))
   const latticeCellCount = Math.max(targetCellCount, Math.ceil(targetCellCount * 1.5))
 
-  let cols = latticeCellCount
-  let rows = 1
-  let bestScore = Number.POSITIVE_INFINITY
-
-  for (let divisor = 1; divisor * divisor <= latticeCellCount; divisor += 1) {
-    if (latticeCellCount % divisor !== 0) continue
-    const pairACols = latticeCellCount / divisor
-    const pairARows = divisor
-    const pairBCols = divisor
-    const pairBRows = latticeCellCount / divisor
-
-    const pairAScore = Math.abs(pairACols / pairARows - viewportRatio)
-    if (pairAScore < bestScore) {
-      bestScore = pairAScore
-      cols = pairACols
-      rows = pairARows
-    }
-
-    const pairBScore = Math.abs(pairBCols / pairBRows - viewportRatio)
-    if (pairBScore < bestScore) {
-      bestScore = pairBScore
-      cols = pairBCols
-      rows = pairBRows
-    }
-  }
-
+  let rows = Math.max(1, Math.round(Math.sqrt(latticeCellCount / Math.max(0.1, viewportRatio))))
+  let cols = Math.max(1, Math.ceil(latticeCellCount / rows))
   if (cols * rows < latticeCellCount) {
-    rows = Math.max(1, Math.round(Math.sqrt(latticeCellCount / Math.max(0.1, viewportRatio))))
-    cols = Math.max(1, Math.ceil(latticeCellCount / rows))
+    rows = Math.max(1, Math.ceil(latticeCellCount / cols))
   }
 
   const viewportScale = Math.sqrt((usableWidth * usableHeight) / Math.max(1, REFERENCE_VIEWPORT_AREA))
@@ -471,7 +446,7 @@ export default function DesktopShell() {
                   width: `${node.size}px`,
                   height: `${node.size}px`,
                   borderColor: node.clusterColor,
-                  background: "#000",
+                  background: node.clusterId === "import-modules" ? "#fff" : "#000",
                   boxShadow: `0 0 ${Math.round(4 + glowStrength * 18)}px rgba(0, 0, 0, 0.18)`
                 }}
               />
