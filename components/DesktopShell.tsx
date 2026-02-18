@@ -65,9 +65,9 @@ const RANDOM_MASS_MIN = 0.32
 const RANDOM_MASS_MAX = 0.88
 // TODO: Replace random node mass with content-density-derived mass.
 const REFERENCE_VIEWPORT_AREA = 1280 * 720
-const GRID_OPEN_CELL_RATIO = 0.12
-const MOVEMENT_INTERVAL_MS = 220
-const MOVEMENT_BATCH_RATIO = 0.05
+const GRID_OPEN_CELL_RATIO = 0.34
+const MOVEMENT_INTERVAL_MS = 140
+const MOVEMENT_BATCH_RATIO = 0.16
 
 const FALLBACK_CLUSTER_COLORS = ["#ff2d55", "#00c2ff", "#00e08a", "#ff8a00", "#7a5cff", "#ffd400", "#ff4fd8"]
 
@@ -93,7 +93,7 @@ function buildGridLayout(nodeCount: number, stageWidth: number, stageHeight: num
   const usableHeight = Math.max(1, stageHeight - VIEWPORT_PADDING * 2) - GRID_GAP
   const viewportRatio = usableWidth / Math.max(1, usableHeight)
   const targetCellCount = Math.max(nodeCount + 1, Math.ceil(nodeCount * (1 + GRID_OPEN_CELL_RATIO)))
-  const latticeCellCount = Math.max(targetCellCount, Math.ceil(targetCellCount * 1.35))
+  const latticeCellCount = Math.max(targetCellCount, Math.ceil(targetCellCount * 1.5))
 
   let cols = latticeCellCount
   let rows = 1
@@ -471,7 +471,7 @@ export default function DesktopShell() {
                   width: `${node.size}px`,
                   height: `${node.size}px`,
                   borderColor: node.clusterColor,
-                  background: isSelected ? "#000" : "transparent",
+                  background: "#000",
                   boxShadow: `0 0 ${Math.round(4 + glowStrength * 18)}px rgba(0, 0, 0, 0.18)`
                 }}
               />
