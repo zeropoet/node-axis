@@ -58,6 +58,13 @@ type LinkSegment = {
   width: number
 }
 
+type FacetFill = {
+  key: string
+  points: string
+  color: string
+  opacity: number
+}
+
 const VIEWPORT_PADDING = 0
 const GRID_GAP = 0
 const GRID_SORT_PROPERTY: GridSortProperty = "clusterId"
@@ -68,6 +75,10 @@ const REFERENCE_VIEWPORT_AREA = 1280 * 720
 const GRID_OPEN_CELL_RATIO = 0.34
 const MOVEMENT_INTERVAL_MS = 140
 const MOVEMENT_BATCH_RATIO = 0.16
+const VELOCITY_NORMALIZATION_SPEED = 720
+const VELOCITY_DECAY = 0.8
+const VELOCITY_MASS_COMPRESSION = 0.28
+const MASS_GROWTH_DURATION_MS = 180000
 
 const FALLBACK_CLUSTER_COLORS = ["#ff2d55", "#00c2ff", "#00e08a", "#ff8a00", "#7a5cff", "#ffd400", "#ff4fd8"]
 
@@ -159,8 +170,12 @@ function getNodeCorners(node: PositionedNode): CornerPoints {
 
 export default function DesktopShell() {
   const stageRef = useRef<HTMLDivElement>(null)
+  const previousNodeCellIndicesRef = useRef<number[] | null>(null)
+  const previousVelocitySampleAtRef = useRef<number | null>(null)
+  const growthStartedAtRef = useRef<number>(performance.now())
   const [stageSize, setStageSize] = useState({ width: 1280, height: 720 })
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [growthTick, setGrowthTick] = useState(0)
 
   const flattenedNodes = useMemo(() => {
     const nodes: Omit<PositionedNode, "x" | "y" | "size" | "col" | "row" | "index">[] = []
@@ -224,6 +239,14 @@ export default function DesktopShell() {
   }, [arrangedNodes.length, stageSize.height, stageSize.width])
 
   const [nodeCellIndices, setNodeCellIndices] = useState<number[]>([])
+  const [nodeVelocityByIndex, setNodeVelocityByIndex] = useState<number[]>([])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setGrowthTick((prev) => prev + 1)
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     setNodeCellIndices((prev) => {
@@ -242,6 +265,13 @@ export default function DesktopShell() {
       )
     })
   }, [arrangedNodes.length, gridLayout.activeCellIndices, gridLayout.cellCount])
+
+  useEffect(() => {
+    setNodeVelocityByIndex((prev) => {
+      if (prev.length === arrangedNodes.length) return prev
+      return Array.from({ length: arrangedNodes.length }, () => 0)
+    })
+  }, [arrangedNodes.length])
 
   useEffect(() => {
     if (arrangedNodes.length === 0 || gridLayout.cellCount === 0) return
@@ -294,12 +324,61 @@ export default function DesktopShell() {
     return () => window.clearInterval(timer)
   }, [arrangedNodes.length, gridLayout.activeCellIndices, gridLayout.cellCount, gridLayout.cols, gridLayout.rows])
 
+  useEffect(() => {
+    if (arrangedNodes.length === 0 || nodeCellIndices.length !== arrangedNodes.length) return
+
+    const previousCellIndices = previousNodeCellIndicesRef.current
+    if (!previousCellIndices || previousCellIndices.length !== nodeCellIndices.length) {
+      previousNodeCellIndicesRef.current = nodeCellIndices.slice()
+      previousVelocitySampleAtRef.current = performance.now()
+      return
+    }
+
+    const now = performance.now()
+    const previousSampleAt = previousVelocitySampleAtRef.current ?? now - MOVEMENT_INTERVAL_MS
+    const deltaSeconds = Math.max(0.016, (now - previousSampleAt) / 1000)
+
+    setNodeVelocityByIndex((prev) => {
+      const current = prev.length === arrangedNodes.length ? prev : Array.from({ length: arrangedNodes.length }, () => 0)
+      return nodeCellIndices.map((cellIndex, nodeIndex) => {
+        const existingVelocity = current[nodeIndex] ?? 0
+        const previousCellIndex = previousCellIndices[nodeIndex]
+
+        if (previousCellIndex === cellIndex) {
+          const decayed = existingVelocity * VELOCITY_DECAY
+          return decayed < 0.002 ? 0 : decayed
+        }
+
+        const previousLayout = gridLayout.positions[previousCellIndex]
+        const nextLayout = gridLayout.positions[cellIndex]
+        if (!previousLayout || !nextLayout) {
+          const decayed = existingVelocity * VELOCITY_DECAY
+          return decayed < 0.002 ? 0 : decayed
+        }
+
+        const distance = Math.hypot(nextLayout.x - previousLayout.x, nextLayout.y - previousLayout.y)
+        const speed = distance / deltaSeconds
+        const normalizedVelocity = clamp(speed / VELOCITY_NORMALIZATION_SPEED, 0, 1)
+        return Math.max(normalizedVelocity, existingVelocity * 0.62)
+      })
+    })
+
+    previousNodeCellIndicesRef.current = nodeCellIndices.slice()
+    previousVelocitySampleAtRef.current = now
+  }, [arrangedNodes.length, gridLayout.positions, nodeCellIndices])
+
   const positionedNodes = useMemo(() => {
+    const elapsedGrowthMs = Math.max(0, performance.now() - growthStartedAtRef.current)
+    const growthProgress = clamp(elapsedGrowthMs / MASS_GROWTH_DURATION_MS, 0, 1)
+
     return arrangedNodes.map((node, index) => {
       const cellIndex = nodeCellIndices[index] ?? index
       const layout = gridLayout.positions[cellIndex]
       const baseSize = layout?.size ?? 1
-      const massScale = node.nodeMass
+      const velocity = nodeVelocityByIndex[index] ?? 0
+      const grownMass = node.nodeMass + (1 - node.nodeMass) * growthProgress
+      const velocityScale = 1 - velocity * VELOCITY_MASS_COMPRESSION
+      const massScale = clamp(grownMass * velocityScale, RANDOM_MASS_MIN * 0.7, 1)
       const scaledSize = baseSize * massScale
       const scaledOffset = (scaledSize - baseSize) * 0.5
       return {
@@ -312,7 +391,74 @@ export default function DesktopShell() {
         index: cellIndex
       }
     })
-  }, [arrangedNodes, gridLayout.positions, nodeCellIndices])
+  }, [arrangedNodes, gridLayout.positions, growthTick, nodeCellIndices, nodeVelocityByIndex])
+
+  const selectedFacetFills = useMemo(() => {
+    if (!selectedNodeId) return [] as FacetFill[]
+
+    const nodesByCell = new Map<number, PositionedNode>()
+    positionedNodes.forEach((node) => {
+      nodesByCell.set(node.index, node)
+    })
+
+    const selectedNode = positionedNodes.find((node) => node.id === selectedNodeId)
+    if (!selectedNode) return [] as FacetFill[]
+
+    const selectedColor = "rgb(205, 205, 205)"
+    const selectedCorners = getNodeCorners(selectedNode)
+    const selectedCell = selectedNode.index
+    const col = selectedCell % gridLayout.cols
+    const row = Math.floor(selectedCell / gridLayout.cols)
+    const fills: FacetFill[] = []
+
+    function addFacet(
+      key: string,
+      neighborCell: number,
+      pointsBuilder: (neighborCorners: CornerPoints) => string
+    ) {
+      if (neighborCell < 0 || neighborCell >= gridLayout.cellCount) return
+      const neighborNode = nodesByCell.get(neighborCell)
+      if (!neighborNode) return
+
+      const neighborCorners = getNodeCorners(neighborNode)
+      fills.push({
+        key,
+        points: pointsBuilder(neighborCorners),
+        color: selectedColor,
+        opacity: 0.45
+      })
+    }
+
+    addFacet(
+      `${selectedNode.id}-facet-right`,
+      col < gridLayout.cols - 1 ? selectedCell + 1 : -1,
+      (neighborCorners) =>
+        `${selectedCorners.tr.x},${selectedCorners.tr.y} ${selectedCorners.br.x},${selectedCorners.br.y} ${neighborCorners.bl.x},${neighborCorners.bl.y} ${neighborCorners.tl.x},${neighborCorners.tl.y}`
+    )
+
+    addFacet(
+      `${selectedNode.id}-facet-left`,
+      col > 0 ? selectedCell - 1 : -1,
+      (neighborCorners) =>
+        `${selectedCorners.tl.x},${selectedCorners.tl.y} ${selectedCorners.bl.x},${selectedCorners.bl.y} ${neighborCorners.br.x},${neighborCorners.br.y} ${neighborCorners.tr.x},${neighborCorners.tr.y}`
+    )
+
+    addFacet(
+      `${selectedNode.id}-facet-down`,
+      row < gridLayout.rows - 1 ? selectedCell + gridLayout.cols : -1,
+      (neighborCorners) =>
+        `${selectedCorners.bl.x},${selectedCorners.bl.y} ${selectedCorners.br.x},${selectedCorners.br.y} ${neighborCorners.tr.x},${neighborCorners.tr.y} ${neighborCorners.tl.x},${neighborCorners.tl.y}`
+    )
+
+    addFacet(
+      `${selectedNode.id}-facet-up`,
+      row > 0 ? selectedCell - gridLayout.cols : -1,
+      (neighborCorners) =>
+        `${selectedCorners.tl.x},${selectedCorners.tl.y} ${selectedCorners.tr.x},${selectedCorners.tr.y} ${neighborCorners.br.x},${neighborCorners.br.y} ${neighborCorners.bl.x},${neighborCorners.bl.y}`
+    )
+
+    return fills
+  }, [gridLayout.cellCount, gridLayout.cols, gridLayout.rows, positionedNodes, selectedNodeId])
 
   const linkSegments = useMemo(() => {
     const segments: LinkSegment[] = []
@@ -415,6 +561,14 @@ export default function DesktopShell() {
 
         <div className="cluster-canvas">
           <svg className="cluster-links" width="100%" height="100%" aria-hidden="true">
+            {selectedFacetFills.map((facet) => (
+              <polygon
+                key={facet.key}
+                points={facet.points}
+                fill={facet.color}
+                fillOpacity={facet.opacity}
+              />
+            ))}
             {linkSegments.map((segment) => (
               <line
                 key={segment.key}
