@@ -53,6 +53,12 @@ Edit `/lib/appRegistry.ts` to:
 
 `CENTER_DISPLAY_CLUSTERS` is the source of truth for rendered cluster data.
 
+## Visual Behavior
+
+- Node size starts from deterministic random mass and gradually grows toward full cell capacity over ~3 minutes.
+- Node movement applies temporary velocity-based compression (shrink on motion), preventing overlap.
+- Selecting a node fills its immediate connecting facets (up/down/left/right where neighbors exist) with `rgb(205, 205, 205)`.
+
 ## Build and Deploy Notes
 
 - `next.config.mjs` uses `output: "export"`, so `npm run build` emits a static site in `out/`.
