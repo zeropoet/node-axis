@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { CENTER_DISPLAY_CLUSTERS } from "@/lib/appRegistry"
 import P5Background from "@/components/P5Background"
 
-type GridSortProperty = "clusterId" | "name" | "mass"
+type GridSortProperty = "clusterSize" | "clusterId" | "name" | "mass"
 
 type PositionedNode = {
   id: string
@@ -14,6 +14,7 @@ type PositionedNode = {
   clusterId: string
   clusterName: string
   clusterColor: string
+  clusterNodeCount: number
   nodeMass: number
   x: number
   y: number
@@ -67,7 +68,7 @@ type FacetFill = {
 
 const VIEWPORT_PADDING = 0
 const GRID_GAP = 0
-const GRID_SORT_PROPERTY: GridSortProperty = "clusterId"
+const GRID_SORT_PROPERTY: GridSortProperty = "clusterSize"
 const RANDOM_MASS_MIN = 0.42
 const RANDOM_MASS_MAX = 0.94
 // TODO: Replace random node mass with content-density-derived mass.
@@ -154,6 +155,7 @@ function buildGridLayout(nodeCount: number, stageWidth: number, stageHeight: num
 }
 
 function getSortValue(node: Omit<PositionedNode, "x" | "y" | "size" | "col" | "row" | "index">, property: GridSortProperty) {
+  if (property === "clusterSize") return node.clusterNodeCount
   if (property === "name") return node.name.toLowerCase()
   if (property === "mass") return node.nodeMass
   return node.clusterId
@@ -176,6 +178,14 @@ export default function DesktopShell() {
   const [stageSize, setStageSize] = useState({ width: 1280, height: 720 })
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [growthTick, setGrowthTick] = useState(0)
+  const [stageLoaded, setStageLoaded] = useState(false)
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setStageLoaded(true)
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [])
 
   const flattenedNodes = useMemo(() => {
     const nodes: Omit<PositionedNode, "x" | "y" | "size" | "col" | "row" | "index">[] = []
@@ -193,6 +203,7 @@ export default function DesktopShell() {
           clusterId: cluster.id,
           clusterName: cluster.name,
           clusterColor: color,
+          clusterNodeCount: cluster.nodes.length,
           nodeMass: randomMass
         })
       })
@@ -207,6 +218,7 @@ export default function DesktopShell() {
       const bValue = getSortValue(b, GRID_SORT_PROPERTY)
       if (aValue < bValue) return -1
       if (aValue > bValue) return 1
+      if (a.clusterId !== b.clusterId) return a.clusterId.localeCompare(b.clusterId)
       if (a.name !== b.name) return a.name.localeCompare(b.name)
       return a.id.localeCompare(b.id)
     })
@@ -556,7 +568,7 @@ export default function DesktopShell() {
 
   return (
     <main className="desktop-shell">
-      <section ref={stageRef} className="stage" aria-label="Cluster node stage">
+      <section ref={stageRef} className={`stage${stageLoaded ? " is-loaded" : ""}`} aria-label="Cluster node stage">
         <P5Background />
 
         <div className="cluster-canvas">

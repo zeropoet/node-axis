@@ -505,7 +505,7 @@ const THE_SOMETHING_CLUSTER: CenterDisplayCluster = {
 }
 
 const A_LION_CLUSTER: CenterDisplayCluster = {
-  id: "a.lion",
+  id: "a-lion",
   name: "A.Lion",
   color: "#8000ff",
   physics: { mass: 1.08, drag: 0.2, spring: 1.02, repulsion: 1.06 },
@@ -596,6 +596,12 @@ const THE_OVEL_NODE_CLUSTER: CenterDisplayCluster = {
       name: "ovel-7",
       description: "",
       image: "ipfs://QmacFwS2zK4SmZeue5SGERJTEB9gu47kYvGdUR1ArcnAdg/nft.png"
+    },
+    {
+      id: "ovel-8",
+      name: "ovel-8",
+      description: "",
+      image: "ipfs://QmXW36Rpu3TMdqUpzQfprSAhsvjmpdoBN4GuSyhspUqm5Z/nft.jpg"
     }
   ]
 }
@@ -936,6 +942,7 @@ const HAERT_CLUSTER: CenterDisplayCluster = {
     { id: "heart-37", name: "heart-37", description: "", image: "https://arweave.net/wM0HX2Gr-Xo9QXaUerccK9987M-xQU5q2sD_4xvpmt4" },
     { id: "heart-39", name: "heart-39", description: "", image: "https://arweave.net/C8sTGERTA-b4HA23LVX7GDsoed2Q-gRKT2jft8wGTZU" },
     { id: "heart-40", name: "heart-40", description: "", image: "https://arweave.net/Apxcufp9u8EOySlYPMtgPvtd-eBkwg3x7EGPpf7n5tc" },
+    { id: "heart-1", name: "heart-1", description: "", image: "https://arweave.net/bcllLvTSX1g7EhAOBeuXGf-RUXB18lrFriUYEijWoZ0" },
     { id: "heart-2", name: "heart-2", description: "", image: "https://arweave.net/9Jjg-85PMEFxy6Iesa3lYTDMpfzeT8P2nuvVwBjiz44" },
     { id: "heart-3", name: "heart-3", description: "", image: "https://arweave.net/MkMrxzdyPcXDFdwj_KQC-kqn0cSKTbnvQQSFWqQiico" },
     { id: "heart-5", name: "heart-5", description: "", image: "https://arweave.net/cPFCtp2llZ0blMI99jKlKRCVeroo0-2rgHoZSorc-_Q" },
@@ -1109,6 +1116,115 @@ const IMPORT_MODULES_CLUSTER: CenterDisplayCluster = {
   ]
 }
 
+const COMPOSITION_1_CLUSTER: CenterDisplayCluster = {
+  id: "composition-1",
+  name: "composition-1",
+  color: "#6b7280",
+  physics: { mass: 1, drag: 0.2, spring: 1.02, repulsion: 1.03 },
+  nodes: [
+    { id: "composition-1-001", name: "composition-1-001", description: "", image: "" },
+    { id: "composition-1-002", name: "composition-1-002", description: "", image: "" },
+    { id: "composition-1-003", name: "composition-1-003", description: "", image: "" },
+    { id: "composition-1-004", name: "composition-1-004", description: "", image: "" },
+    { id: "composition-1-005", name: "composition-1-005", description: "", image: "" },
+    { id: "composition-1-006", name: "composition-1-006", description: "", image: "" },
+    { id: "composition-1-007", name: "composition-1-007", description: "", image: "" },
+    { id: "composition-1-008", name: "composition-1-008", description: "", image: "" },
+    { id: "composition-1-009", name: "composition-1-009", description: "", image: "" },
+    { id: "composition-1-010", name: "composition-1-010", description: "", image: "" },
+    { id: "composition-1-011", name: "composition-1-011", description: "", image: "" },
+    { id: "composition-1-012", name: "composition-1-012", description: "", image: "" },
+    { id: "composition-1-013", name: "composition-1-013", description: "", image: "" },
+    { id: "composition-1-014", name: "composition-1-014", description: "", image: "" },
+    { id: "composition-1-015", name: "composition-1-015", description: "", image: "" },
+    { id: "composition-1-016", name: "composition-1-016", description: "", image: "" },
+    { id: "composition-1-017", name: "composition-1-017", description: "", image: "" },
+    { id: "composition-1-018", name: "composition-1-018", description: "", image: "" },
+    { id: "composition-1-019", name: "composition-1-019", description: "", image: "" },
+    { id: "composition-1-020", name: "composition-1-020", description: "", image: "" },
+    { id: "composition-1-021", name: "composition-1-021", description: "", image: "" },
+    { id: "composition-1-022", name: "composition-1-022", description: "", image: "" },
+    { id: "composition-1-023", name: "composition-1-023", description: "", image: "" },
+    { id: "composition-1-024", name: "composition-1-024", description: "", image: "" },
+    { id: "composition-1-025", name: "composition-1-025", description: "", image: "" },
+    { id: "composition-1-026", name: "composition-1-026", description: "", image: "" },
+    { id: "composition-1-027", name: "composition-1-027", description: "", image: "" },
+    { id: "composition-1-028", name: "composition-1-028", description: "", image: "" },
+    { id: "composition-1-029", name: "composition-1-029", description: "", image: "" },
+    { id: "composition-1-030", name: "composition-1-030", description: "", image: "" },
+    { id: "composition-1-031", name: "composition-1-031", description: "", image: "" },
+    { id: "composition-1-032", name: "composition-1-032", description: "", image: "" },
+    { id: "composition-1-033", name: "composition-1-033", description: "", image: "" },
+    { id: "composition-1-034", name: "composition-1-034", description: "", image: "" },
+    { id: "composition-1-035", name: "composition-1-035", description: "", image: "" },
+    { id: "composition-1-036", name: "composition-1-036", description: "", image: "" },
+    { id: "composition-1-037", name: "composition-1-037", description: "", image: "" },
+    { id: "composition-1-038", name: "composition-1-038", description: "", image: "" },
+    { id: "composition-1-039", name: "composition-1-039", description: "", image: "" },
+    { id: "composition-1-040", name: "composition-1-040", description: "", image: "" },
+    { id: "composition-1-041", name: "composition-1-041", description: "", image: "" },
+    { id: "composition-1-042", name: "composition-1-042", description: "", image: "" },
+    { id: "composition-1-043", name: "composition-1-043", description: "", image: "" },
+    { id: "composition-1-044", name: "composition-1-044", description: "", image: "" },
+    { id: "composition-1-045", name: "composition-1-045", description: "", image: "" },
+    { id: "composition-1-046", name: "composition-1-046", description: "", image: "" },
+    { id: "composition-1-047", name: "composition-1-047", description: "", image: "" },
+    { id: "composition-1-048", name: "composition-1-048", description: "", image: "" },
+    { id: "composition-1-049", name: "composition-1-049", description: "", image: "" },
+    { id: "composition-1-050", name: "composition-1-050", description: "", image: "" },
+    { id: "composition-1-051", name: "composition-1-051", description: "", image: "" },
+    { id: "composition-1-052", name: "composition-1-052", description: "", image: "" },
+    { id: "composition-1-053", name: "composition-1-053", description: "", image: "" },
+    { id: "composition-1-054", name: "composition-1-054", description: "", image: "" },
+    { id: "composition-1-055", name: "composition-1-055", description: "", image: "" },
+    { id: "composition-1-056", name: "composition-1-056", description: "", image: "" },
+    { id: "composition-1-057", name: "composition-1-057", description: "", image: "" },
+    { id: "composition-1-058", name: "composition-1-058", description: "", image: "" },
+    { id: "composition-1-059", name: "composition-1-059", description: "", image: "" },
+    { id: "composition-1-060", name: "composition-1-060", description: "", image: "" },
+    { id: "composition-1-061", name: "composition-1-061", description: "", image: "" },
+    { id: "composition-1-062", name: "composition-1-062", description: "", image: "" },
+    { id: "composition-1-063", name: "composition-1-063", description: "", image: "" },
+    { id: "composition-1-064", name: "composition-1-064", description: "", image: "" },
+    { id: "composition-1-065", name: "composition-1-065", description: "", image: "" },
+    { id: "composition-1-066", name: "composition-1-066", description: "", image: "" },
+    { id: "composition-1-067", name: "composition-1-067", description: "", image: "" },
+    { id: "composition-1-068", name: "composition-1-068", description: "", image: "" },
+    { id: "composition-1-069", name: "composition-1-069", description: "", image: "" },
+    { id: "composition-1-070", name: "composition-1-070", description: "", image: "" },
+    { id: "composition-1-071", name: "composition-1-071", description: "", image: "" },
+    { id: "composition-1-072", name: "composition-1-072", description: "", image: "" },
+    { id: "composition-1-073", name: "composition-1-073", description: "", image: "" },
+    { id: "composition-1-074", name: "composition-1-074", description: "", image: "" },
+    { id: "composition-1-075", name: "composition-1-075", description: "", image: "" },
+    { id: "composition-1-076", name: "composition-1-076", description: "", image: "" },
+    { id: "composition-1-077", name: "composition-1-077", description: "", image: "" },
+    { id: "composition-1-078", name: "composition-1-078", description: "", image: "" },
+    { id: "composition-1-079", name: "composition-1-079", description: "", image: "" },
+    { id: "composition-1-080", name: "composition-1-080", description: "", image: "" },
+    { id: "composition-1-081", name: "composition-1-081", description: "", image: "" },
+    { id: "composition-1-082", name: "composition-1-082", description: "", image: "" },
+    { id: "composition-1-083", name: "composition-1-083", description: "", image: "" },
+    { id: "composition-1-084", name: "composition-1-084", description: "", image: "" },
+    { id: "composition-1-085", name: "composition-1-085", description: "", image: "" },
+    { id: "composition-1-086", name: "composition-1-086", description: "", image: "" },
+    { id: "composition-1-087", name: "composition-1-087", description: "", image: "" },
+    { id: "composition-1-088", name: "composition-1-088", description: "", image: "" },
+    { id: "composition-1-089", name: "composition-1-089", description: "", image: "" },
+    { id: "composition-1-090", name: "composition-1-090", description: "", image: "" },
+    { id: "composition-1-091", name: "composition-1-091", description: "", image: "" },
+    { id: "composition-1-092", name: "composition-1-092", description: "", image: "" },
+    { id: "composition-1-093", name: "composition-1-093", description: "", image: "" },
+    { id: "composition-1-094", name: "composition-1-094", description: "", image: "" },
+    { id: "composition-1-095", name: "composition-1-095", description: "", image: "" },
+    { id: "composition-1-096", name: "composition-1-096", description: "", image: "" },
+    { id: "composition-1-097", name: "composition-1-097", description: "", image: "" },
+    { id: "composition-1-098", name: "composition-1-098", description: "", image: "" },
+    { id: "composition-1-099", name: "composition-1-099", description: "", image: "" },
+    { id: "composition-1-100", name: "composition-1-100", description: "", image: "" }
+  ]
+}
+
 export const DEFAULT_CENTER_DISPLAY_CLUSTER_ID = PRIMARY_CENTER_CLUSTER.id
 
 export const CENTER_DISPLAY_CLUSTERS: CenterDisplayCluster[] = [
@@ -1123,7 +1239,8 @@ export const CENTER_DISPLAY_CLUSTERS: CenterDisplayCluster[] = [
   RWL_CLUSTER,
   HAERT_CLUSTER,
   THE_VOID_ARCHITECTURE_CLUSTER,
-  IMPORT_MODULES_CLUSTER
+  IMPORT_MODULES_CLUSTER,
+  COMPOSITION_1_CLUSTER
 ]
 
 export function getCenterDisplayCluster(clusterId: string) {
