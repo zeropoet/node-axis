@@ -80,12 +80,6 @@ const VELOCITY_NORMALIZATION_SPEED = 720
 const VELOCITY_DECAY = 0.8
 const VELOCITY_MASS_COMPRESSION = 0.28
 const MASS_GROWTH_DURATION_MS = 180000
-const AUDIO_SIGNATURE_MAX_PER_TICK = 6
-const AUDIO_SIGNATURE_COOLDOWN_MS = 56
-const AUDIO_SIGNATURE_BASE_GAIN = 0.14
-const AUDIO_MASTER_GAIN = 0.24
-
-type MovementDirection = "left" | "right" | "up" | "down"
 
 const FALLBACK_CLUSTER_COLORS = ["#ff2d55", "#00c2ff", "#00e08a", "#ff8a00", "#7a5cff", "#ffd400", "#ff4fd8"]
 
@@ -181,20 +175,10 @@ export default function DesktopShell() {
   const previousNodeCellIndicesRef = useRef<number[] | null>(null)
   const previousVelocitySampleAtRef = useRef<number | null>(null)
   const growthStartedAtRef = useRef<number>(performance.now())
-  const audioContextRef = useRef<AudioContext | null>(null)
-  const audioMasterGainRef = useRef<GainNode | null>(null)
-  const lastAudioSignatureAtRef = useRef<number>(0)
-  const audioResumePromiseRef = useRef<Promise<void> | null>(null)
-  const audioEnabledRef = useRef<boolean>(false)
   const [stageSize, setStageSize] = useState({ width: 1280, height: 720 })
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [growthTick, setGrowthTick] = useState(0)
   const [stageLoaded, setStageLoaded] = useState(false)
-  const [audioEnabled, setAudioEnabled] = useState(false)
-
-  useEffect(() => {
-    audioEnabledRef.current = audioEnabled
-  }, [audioEnabled])
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -269,180 +253,6 @@ export default function DesktopShell() {
   const [nodeCellIndices, setNodeCellIndices] = useState<number[]>([])
   const [nodeVelocityByIndex, setNodeVelocityByIndex] = useState<number[]>([])
 
-  function ensureAudioEngine() {
-    if (typeof window === "undefined") return
-    if (audioContextRef.current && audioMasterGainRef.current) return
-    const AudioContextCtor = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-    if (!AudioContextCtor) return
-
-    const context = new AudioContextCtor()
-    const masterGain = context.createGain()
-    masterGain.gain.value = audioEnabledRef.current ? AUDIO_MASTER_GAIN : 0
-    masterGain.connect(context.destination)
-
-    audioContextRef.current = context
-    audioMasterGainRef.current = masterGain
-  }
-
-  function applyAudioEnabled(nextAudioEnabled: boolean) {
-    setAudioEnabled(nextAudioEnabled)
-    if (!nextAudioEnabled) {
-      const context = audioContextRef.current
-      const masterGain = audioMasterGainRef.current
-      if (!context || !masterGain) return
-      masterGain.gain.cancelScheduledValues(context.currentTime)
-      masterGain.gain.setTargetAtTime(0, context.currentTime, 0.012)
-      return
-    }
-
-    void ensureAudioRunning().then((running) => {
-      if (!running) return
-      const context = audioContextRef.current
-      const masterGain = audioMasterGainRef.current
-      if (!context || !masterGain) return
-      masterGain.gain.cancelScheduledValues(context.currentTime)
-      masterGain.gain.setTargetAtTime(AUDIO_MASTER_GAIN, context.currentTime, 0.012)
-      playAudioConfirmTone()
-    })
-  }
-
-  function ensureAudioRunning() {
-    ensureAudioEngine()
-    const context = audioContextRef.current
-    if (!context) return Promise.resolve(false)
-    if (context.state === "running") return Promise.resolve(true)
-    if (context.state === "closed") return Promise.resolve(false)
-    if (audioResumePromiseRef.current) {
-      return audioResumePromiseRef.current.then(() => context.state === "running").catch(() => false)
-    }
-
-    audioResumePromiseRef.current = context
-      .resume()
-      .catch(() => undefined)
-      .then(() => undefined)
-      .finally(() => {
-        audioResumePromiseRef.current = null
-      })
-
-    return audioResumePromiseRef.current.then(() => context.state === "running").catch(() => false)
-  }
-
-  function directionForMovement(previousCell: number, nextCell: number, cols: number): MovementDirection | null {
-    const delta = nextCell - previousCell
-    if (delta === 1) return "right"
-    if (delta === -1) return "left"
-    if (delta === cols) return "down"
-    if (delta === -cols) return "up"
-    return null
-  }
-
-  function playMovementSignature(direction: MovementDirection, intensity: number, startOffset = 0) {
-    if (!audioEnabledRef.current) return
-    const context = audioContextRef.current
-    const masterGain = audioMasterGainRef.current
-    if (!context || !masterGain) return
-    if (context.state === "suspended") {
-      void ensureAudioRunning().then((running) => {
-        if (running) {
-          playMovementSignature(direction, intensity, startOffset + 0.01)
-        }
-      })
-      return
-    }
-
-    const movementFrequencies: Record<MovementDirection, number> = {
-      left: 184,
-      right: 228,
-      up: 312,
-      down: 146
-    }
-    const sweepStartMultiplier: Record<MovementDirection, number> = {
-      left: 1.22,
-      right: 0.74,
-      up: 0.72,
-      down: 1.28
-    }
-
-    const targetFrequency = movementFrequencies[direction]
-    const sweepStart = targetFrequency * sweepStartMultiplier[direction]
-    const now = context.currentTime + startOffset
-    const duration = 0.24
-    const signalGain = context.createGain()
-    const signalFilter = context.createBiquadFilter()
-    const bodyOscillator = context.createOscillator()
-    const shimmerOscillator = context.createOscillator()
-
-    signalFilter.type = "lowpass"
-    signalFilter.frequency.setValueAtTime(2400, now)
-    signalFilter.frequency.exponentialRampToValueAtTime(860, now + duration)
-    signalFilter.Q.setValueAtTime(0.8, now)
-
-    signalGain.gain.setValueAtTime(0.0001, now)
-    signalGain.gain.exponentialRampToValueAtTime(AUDIO_SIGNATURE_BASE_GAIN * intensity, now + 0.032)
-    signalGain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
-
-    bodyOscillator.type = "sine"
-    bodyOscillator.frequency.setValueAtTime(sweepStart, now)
-    bodyOscillator.frequency.exponentialRampToValueAtTime(targetFrequency, now + duration * 0.82)
-
-    shimmerOscillator.type = "triangle"
-    shimmerOscillator.frequency.setValueAtTime(sweepStart * 0.5, now)
-    shimmerOscillator.frequency.exponentialRampToValueAtTime(targetFrequency * 1.01, now + duration)
-    shimmerOscillator.detune.setValueAtTime(direction === "left" || direction === "down" ? -7 : 9, now)
-
-    bodyOscillator.connect(signalFilter)
-    shimmerOscillator.connect(signalFilter)
-    signalFilter.connect(signalGain)
-    signalGain.connect(masterGain)
-
-    bodyOscillator.start(now)
-    shimmerOscillator.start(now)
-    bodyOscillator.stop(now + duration + 0.02)
-    shimmerOscillator.stop(now + duration + 0.02)
-  }
-
-  function playAudioConfirmTone() {
-    const context = audioContextRef.current
-    const masterGain = audioMasterGainRef.current
-    if (!context || !masterGain) return
-    if (context.state !== "running") return
-
-    const now = context.currentTime + 0.01
-    const duration = 0.14
-    const gain = context.createGain()
-    const oscillator = context.createOscillator()
-
-    gain.gain.setValueAtTime(0.0001, now)
-    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.018)
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
-
-    oscillator.type = "triangle"
-    oscillator.frequency.setValueAtTime(620, now)
-    oscillator.frequency.exponentialRampToValueAtTime(940, now + duration)
-
-    oscillator.connect(gain)
-    gain.connect(masterGain)
-    oscillator.start(now)
-    oscillator.stop(now + duration + 0.02)
-  }
-
-  function playMovementSignatures(directions: MovementDirection[]) {
-    if (!audioEnabledRef.current) return
-    if (directions.length === 0 || arrangedNodes.length === 0) return
-    const now = performance.now()
-    if (now - lastAudioSignatureAtRef.current < AUDIO_SIGNATURE_COOLDOWN_MS) return
-
-    const signatureCount = Math.min(AUDIO_SIGNATURE_MAX_PER_TICK, directions.length)
-    const stride = Math.max(1, Math.floor(directions.length / signatureCount))
-    const intensity = clamp(0.46 + directions.length / arrangedNodes.length, 0.46, 1)
-    let emitted = 0
-    for (let i = 0; i < directions.length && emitted < signatureCount; i += stride) {
-      playMovementSignature(directions[i], intensity, emitted * 0.016)
-      emitted += 1
-    }
-    lastAudioSignatureAtRef.current = now
-  }
-
   useEffect(() => {
     const timer = window.setInterval(() => {
       setGrowthTick((prev) => prev + 1)
@@ -475,39 +285,6 @@ export default function DesktopShell() {
     })
   }, [arrangedNodes.length])
 
-  useEffect(() => {
-    function armAudio() {
-      void ensureAudioRunning()
-    }
-
-    // Try to start audio immediately so it is on by default when policy allows.
-    armAudio()
-
-    function armAudioIfVisible() {
-      if (document.visibilityState === "visible") {
-        armAudio()
-      }
-    }
-
-    window.addEventListener("pointerdown", armAudio, { passive: true })
-    window.addEventListener("touchstart", armAudio, { passive: true })
-    window.addEventListener("keydown", armAudio)
-    window.addEventListener("focus", armAudio)
-    document.addEventListener("visibilitychange", armAudioIfVisible)
-    return () => {
-      window.removeEventListener("pointerdown", armAudio)
-      window.removeEventListener("touchstart", armAudio)
-      window.removeEventListener("keydown", armAudio)
-      window.removeEventListener("focus", armAudio)
-      document.removeEventListener("visibilitychange", armAudioIfVisible)
-      const context = audioContextRef.current
-      if (context) {
-        void context.close()
-        audioContextRef.current = null
-        audioMasterGainRef.current = null
-      }
-    }
-  }, [])
 
   useEffect(() => {
     if (arrangedNodes.length === 0 || gridLayout.cellCount === 0) return
@@ -573,19 +350,6 @@ export default function DesktopShell() {
     const now = performance.now()
     const previousSampleAt = previousVelocitySampleAtRef.current ?? now - MOVEMENT_INTERVAL_MS
     const deltaSeconds = Math.max(0.016, (now - previousSampleAt) / 1000)
-    const movementDirections: MovementDirection[] = []
-
-    for (let nodeIndex = 0; nodeIndex < nodeCellIndices.length; nodeIndex += 1) {
-      const previousCell = previousCellIndices[nodeIndex]
-      const nextCell = nodeCellIndices[nodeIndex]
-      if (previousCell === nextCell) continue
-      const direction = directionForMovement(previousCell, nextCell, gridLayout.cols)
-      if (direction) {
-        movementDirections.push(direction)
-      }
-    }
-
-    playMovementSignatures(movementDirections)
 
     setNodeVelocityByIndex((prev) => {
       const current = prev.length === arrangedNodes.length ? prev : Array.from({ length: arrangedNodes.length }, () => 0)
@@ -614,7 +378,7 @@ export default function DesktopShell() {
 
     previousNodeCellIndicesRef.current = nodeCellIndices.slice()
     previousVelocitySampleAtRef.current = now
-  }, [arrangedNodes.length, gridLayout.cols, gridLayout.positions, nodeCellIndices])
+  }, [arrangedNodes.length, gridLayout.positions, nodeCellIndices])
 
   const positionedNodes = useMemo(() => {
     const elapsedGrowthMs = Math.max(0, performance.now() - growthStartedAtRef.current)
@@ -807,21 +571,6 @@ export default function DesktopShell() {
     <main className="desktop-shell">
       <section ref={stageRef} className={`stage${stageLoaded ? " is-loaded" : ""}`} aria-label="Cluster node stage">
         <P5Background />
-        <button
-          type="button"
-          className={`audio-toggle${audioEnabled ? " is-on" : " is-off"}`}
-          onClick={() => applyAudioEnabled(!audioEnabled)}
-          aria-pressed={audioEnabled}
-          aria-label={audioEnabled ? "Turn audio off" : "Turn audio on"}
-          title={audioEnabled ? "Turn audio off" : "Turn audio on"}
-        >
-          <span className="audio-toggle-icon" aria-hidden="true">
-            <span className="audio-toggle-stem" />
-            <span className="audio-toggle-cone" />
-            <span className="audio-toggle-wave audio-toggle-wave-1" />
-            <span className="audio-toggle-wave audio-toggle-wave-2" />
-          </span>
-        </button>
 
         <div className="cluster-canvas">
           <svg className="cluster-links" width="100%" height="100%" aria-hidden="true">
