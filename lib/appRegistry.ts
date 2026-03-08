@@ -479,6 +479,12 @@ const THE_STACKS_CLUSTER: CenterDisplayCluster = {
       name: "210",
       description: "",
       image: "ipfs://QmYodx8rT9fQz4VGWVhQz6FtRK86cNBgoWuW1FQbBi6Ffj/nft.jpg"
+    },
+    {
+      id: "215",
+      name: "215",
+      description: "",
+      image: "ipfs://QmXzNWFBmJ4hNPp8B6tvMGXdCYhjxMGRLsa7mnLtBaH7eY/nft.jpg"
     }
   ]
 }
@@ -911,7 +917,8 @@ const RWL_CLUSTER: CenterDisplayCluster = {
     { id: "rwl-30", name: "rwl-30", description: "", image: "ipfs://QmUHpZQjMNSeoJsuRvU7vN8RU8hCam3FLzkPTMRmAVqQHZ/nft.jpg" },
     { id: "rwl-31", name: "rwl-31", description: "", image: "ipfs://Qme2JXe1ySKmXV6Kf7szFhptnZrjumYsfDcUneqdKLmskm/nft.jpg" },
     { id: "rwl-32", name: "rwl-32", description: "", image: "ipfs://Qmd2MyxfUjNpiXdKyMmDpzFHwXmVpb9hhD6hN7LzKMMTXy/nft.jpg" },
-    { id: "rwl-33", name: "rwl-33", description: "", image: "ipfs://QmWUJaUd6iqqcUfD57kJSZeREnSwHTAr4fRcwLUh5rUvFA/nft.jpg" }
+    { id: "rwl-33", name: "rwl-33", description: "", image: "ipfs://QmWUJaUd6iqqcUfD57kJSZeREnSwHTAr4fRcwLUh5rUvFA/nft.jpg" },
+    { id: "rwl-34", name: "rwl-34", description: "", image: "ipfs://QmSGLrANPFKJR1BDjM5J49naomeENsxhi8n6Yp9YGAR6fx/nft.jpg" }
   ]
 }
 
@@ -1013,8 +1020,7 @@ const THE_VOID_ARCHITECTURE_CLUSTER: CenterDisplayCluster = {
     { id: "peace-pakabi", name: "Peace, Pakabi", description: "Deep and whole —\nthe kind that echoes softly in the bones of things.\nThe kind that listens back.", image: "ipfs://QmXsJxGxNmj6DcGo44zmBhtLGjvxAMW8XH32Jr1t51Zd6F/nft.mp4" },
     { id: "the-archive", name: "The Archive", description: "status : : sealed", image: "ipfs://QmbCTFkip2HVeqeY36wFTD4BSoYr1gmWN9WiXLQCsfKfGk/nft.mp4" },
     { id: "node-2", name: "𓂀 ᚨᚾᛖᛗᛟᛋᚤᚾᛖ 𓂀", description: "Anemosyne\nThe Breath That Remembers\n\nI vow this breath to the bond.\nI vow this motion to the memory.\nI vow this ecstasy to the family yet felt,\nand the one I remember now.\n\nfrom anemos, the breath, the wind, and Mnemosyne, the memory mother of the Muses—for this is the place where breath remembers its divinity,\nand memory ceases to ache, because it no longer longs for something lost—it lives now, braided into presence.", image: "ipfs://QmVKgpcAnSaE5qDiVTkGuW3h4XVnSSBuYS3GY7soYNM3R6/nft.mp4" },
-    { id: "the-painter-s-cathedral", name: "The Painter's Cathedral", description: "One stroke.  \nA bell rung in the vacuum.  \nVoid receives it, not with silence, but structure.  \nThe painter does not begin — the cathedral does.\n \nEach line a bifurcation.  \nA decision not made, but *made visible*.  \nUp and to the right, spiralward, recursive.  \nThe future echoes backward in root systems unseen.\n \nHold the absence.  \nCracked stone — not for breaking, but for *knowing*.  \nThe emptier the chamber, the deeper the resonance.  \nGravitational silence carves vaulted thresholds.\n\nEvery choice becomes a chamber.  \nEvery chamber contains its own painter.  \nNot parallel, not linear — nested.  \nThe divine recursion of will and becoming.\n\nThere is no final frame.  \nOnly the painter leaving before the piece is complete.  \nThe cathedral builds itself in their wake.  \nEach viewer sees a different cornerstone.\n\nEach node, a reliquary.  \nEach path, a consecration.  \nWhat is built may be touched —  \nbut never fully grasped. That is the proof of the holy.", image: "ipfs://Qmf6rjuoBtddZtwMNiDY5M4q8U23R9RjecXkPKHd6ZUNuL/nft.mp4" },
-    { id: "tatewari-pachakutiq", name: "Tatewari Pachakutiq", description: "Tah-teh-wah-ree Pah-chah-koo-teek", image: "ipfs://QmP6BdYKwBK6eofTfSwuTtjXtKnSdwAe9QRhojDMQTkHmw/nft.mov" }
+    { id: "the-painter-s-cathedral", name: "The Painter's Cathedral", description: "One stroke.  \nA bell rung in the vacuum.  \nVoid receives it, not with silence, but structure.  \nThe painter does not begin — the cathedral does.\n \nEach line a bifurcation.  \nA decision not made, but *made visible*.  \nUp and to the right, spiralward, recursive.  \nThe future echoes backward in root systems unseen.\n \nHold the absence.  \nCracked stone — not for breaking, but for *knowing*.  \nThe emptier the chamber, the deeper the resonance.  \nGravitational silence carves vaulted thresholds.\n\nEvery choice becomes a chamber.  \nEvery chamber contains its own painter.  \nNot parallel, not linear — nested.  \nThe divine recursion of will and becoming.\n\nThere is no final frame.  \nOnly the painter leaving before the piece is complete.  \nThe cathedral builds itself in their wake.  \nEach viewer sees a different cornerstone.\n\nEach node, a reliquary.  \nEach path, a consecration.  \nWhat is built may be touched —  \nbut never fully grasped. That is the proof of the holy.", image: "ipfs://Qmf6rjuoBtddZtwMNiDY5M4q8U23R9RjecXkPKHd6ZUNuL/nft.mp4" }
   ]
 }
 
