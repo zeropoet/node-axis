@@ -66,28 +66,6 @@ body {
   height: 100% !important;
 }
 
-.p5-bg::before {
-  content: "";
-  position: absolute;
-  inset: -20%;
-  background:
-    radial-gradient(40% 38% at 20% 30%, rgba(0, 194, 255, 0.2), transparent 70%),
-    radial-gradient(42% 40% at 78% 62%, rgba(255, 45, 85, 0.16), transparent 72%),
-    radial-gradient(36% 36% at 52% 18%, rgba(0, 224, 138, 0.14), transparent 68%);
-  filter: blur(18px);
-  animation: bg-drift 16s ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-@keyframes bg-drift {
-  0% {
-    transform: translate3d(-3%, -2%, 0) scale(1.03);
-  }
-  100% {
-    transform: translate3d(3%, 2%, 0) scale(1.08);
-  }
-}
-
 .cluster-canvas {
   position: absolute;
   inset: 0;
