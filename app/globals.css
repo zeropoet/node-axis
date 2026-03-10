@@ -40,7 +40,7 @@ body {
   position: absolute;
   inset: 0;
   z-index: 5;
-  background: #000;
+  background: #fff;
   pointer-events: none;
   opacity: 1;
   transition: opacity 900ms ease-out, visibility 0s linear 900ms;
