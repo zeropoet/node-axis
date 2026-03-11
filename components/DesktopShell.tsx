@@ -96,6 +96,16 @@ function hashToUnit(value: string) {
   return ((hash >>> 0) % 10000) / 10000
 }
 
+function getBackgroundSquareColor(key: string) {
+  const tint = hashToUnit(`${key}:tint`)
+  const warmth = hashToUnit(`${key}:warmth`)
+  const base = 246 + Math.round(tint * 8)
+  const red = clamp(base + Math.round(warmth * 2), 244, 254)
+  const green = clamp(base, 244, 254)
+  const blue = clamp(base - 1 + Math.round((1 - warmth) * 2), 244, 254)
+  return `rgb(${red}, ${green}, ${blue})`
+}
+
 function buildGridLayout(nodeCount: number, stageWidth: number, stageHeight: number): GridLayout {
   if (nodeCount === 0) {
     return { positions: [], cols: 1, rows: 1, cellCount: 0, activeCellIndices: [] }
@@ -117,11 +127,16 @@ function buildGridLayout(nodeCount: number, stageWidth: number, stageHeight: num
   const responsiveScale = clamp(viewportScale, 0.78, 1.08)
   const size = Math.max(1, Math.min(usableWidth / cols, usableHeight / rows) * responsiveScale)
   const cell = size + GRID_GAP
-  const gridWidth = cols * cell - GRID_GAP
-  const gridHeight = rows * cell - GRID_GAP
-  const xOffset = VIEWPORT_PADDING + Math.floor((usableWidth - gridWidth) * 0.5)
-  const yOffset = VIEWPORT_PADDING + Math.floor((usableHeight - gridHeight) * 0.5)
+  const fillCols = Math.max(cols, Math.ceil((usableWidth + GRID_GAP) / Math.max(1, cell)))
+  const fillRows = Math.max(rows, Math.ceil((usableHeight + GRID_GAP) / Math.max(1, cell)))
+  const fillGridWidth = fillCols * cell - GRID_GAP
+  const fillGridHeight = fillRows * cell - GRID_GAP
+  const xOffset = VIEWPORT_PADDING + Math.floor((usableWidth - fillGridWidth) * 0.5)
+  const yOffset = VIEWPORT_PADDING + Math.floor((usableHeight - fillGridHeight) * 0.5)
   const positions: GridCell[] = []
+
+  cols = fillCols
+  rows = fillRows
 
   const cellCount = cols * rows
 
@@ -406,6 +421,20 @@ export default function DesktopShell() {
     })
   }, [arrangedNodes, gridLayout.positions, growthTick, nodeCellIndices, nodeVelocityByIndex])
 
+  const fillerSquares = useMemo(() => {
+    const occupiedCellIndices = new Set(positionedNodes.map((node) => node.index))
+
+    return gridLayout.positions
+      .filter((cell) => !occupiedCellIndices.has(cell.index))
+      .map((cell) => ({
+        key: `filler-${cell.index}`,
+        x: cell.x,
+        y: cell.y,
+        size: cell.size,
+        color: getBackgroundSquareColor(String(cell.index))
+      }))
+  }, [gridLayout.positions, positionedNodes])
+
   const selectedFacetFills = useMemo(() => {
     if (!selectedNodeId) return [] as FacetFill[]
 
@@ -573,6 +602,22 @@ export default function DesktopShell() {
         <P5Background />
 
         <div className="cluster-canvas">
+          <div className="background-square-field" aria-hidden="true">
+            {fillerSquares.map((square) => (
+              <div
+                key={square.key}
+                className="background-square"
+                style={{
+                  left: `${square.x}px`,
+                  top: `${square.y}px`,
+                  width: `${square.size}px`,
+                  height: `${square.size}px`,
+                  background: square.color
+                }}
+              />
+            ))}
+          </div>
+
           <svg className="cluster-links" width="100%" height="100%" aria-hidden="true">
             {selectedFacetFills.map((facet) => (
               <polygon

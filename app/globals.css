@@ -72,11 +72,24 @@ body {
   z-index: 2;
 }
 
+.background-square-field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.background-square {
+  position: absolute;
+  border: 1px solid #000;
+  border-radius: 0;
+}
+
 .cluster-links {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
 .node-square {
@@ -89,7 +102,7 @@ body {
   justify-content: center;
   cursor: pointer;
   overflow: hidden;
-  z-index: 1;
+  z-index: 2;
   transition: left 220ms ease, top 220ms ease, width 220ms ease, height 220ms ease, box-shadow 120ms ease, filter 140ms ease;
   will-change: left, top, width, height, box-shadow, filter;
 }
